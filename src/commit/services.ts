@@ -3,8 +3,9 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Effect, Layer } from "effect";
+import { AiError, LanguageModel } from "effect/unstable/ai";
 
-import type { CommitProposal, StagedSnapshot } from "./contracts.ts";
+import { CommitProposal, type StagedSnapshot } from "./contracts.ts";
 import type {
   CommitMessageGeneratorError,
   GitCommandError,
@@ -13,6 +14,7 @@ import type {
   NotGitRepositoryError,
 } from "./errors.ts";
 import {
+  CommitMessageGeneratorError as CommitMessageGeneratorErrorClass,
   NoStagedChangesError as NoStagedChangesErrorClass,
   NotGitRepositoryError as NotGitRepositoryErrorClass,
   GitCommandError as GitCommandErrorClass,
@@ -86,6 +88,12 @@ const commitWithTempFilePlaceholderCommand = (): GitCommand => [
 const tempMessageDirectoryPrefix = join(tmpdir(), "gitai-commit-message-");
 
 const tempMessageFileName = "COMMIT_EDITMSG";
+
+const commitProposalPromptHeader = [
+  "You write Git commit proposals from staged diffs.",
+  "Return exactly one commit proposal object.",
+  "Keep the summary specific to the staged changes and include a body only when it adds useful detail.",
+].join("\n");
 
 const cleanupTempDirectory = (tempDirectory: string) =>
   Effect.sync(() => {
@@ -209,6 +217,41 @@ const commitApproved = Effect.fn("GitRepository.commitApproved")(function* (
   }).pipe(Effect.ensuring(cleanupTempDirectory(tempDirectory)));
 });
 
+const buildCommitProposalPrompt = (
+  snapshot: StagedSnapshot,
+  instruction: string | undefined,
+): string => {
+  const sections = [commitProposalPromptHeader, `Staged diff:\n${snapshot.stagedPatch}`];
+
+  if (instruction !== undefined) {
+    sections.push(`Additional instruction:\n${instruction}`);
+  }
+
+  return sections.join("\n\n");
+};
+
+const toCommitMessageGeneratorError = (error: AiError.AiError): CommitMessageGeneratorError => {
+  switch (error.reason._tag) {
+    case "StructuredOutputError":
+    case "InvalidOutputError":
+    case "UnsupportedSchemaError":
+      return new CommitMessageGeneratorErrorClass({
+        reason: "response-decode",
+        message: error.message,
+      });
+    case "InvalidRequestError":
+      return new CommitMessageGeneratorErrorClass({
+        reason: "model",
+        message: error.message,
+      });
+    default:
+      return new CommitMessageGeneratorErrorClass({
+        reason: "provider",
+        message: error.message,
+      });
+  }
+};
+
 export class GitRepository extends Context.Service<
   GitRepository,
   {
@@ -241,4 +284,29 @@ export class CommitMessageGenerator extends Context.Service<
       instruction: string | undefined,
     ): Effect.Effect<CommitProposal, CommitMessageGeneratorError>;
   }
->()("@urban/gitai/commit/CommitMessageGenerator") {}
+>()("@urban/gitai/commit/CommitMessageGenerator") {
+  static readonly layer = Layer.effect(
+    CommitMessageGenerator,
+    Effect.gen(function* () {
+      const model = yield* LanguageModel.LanguageModel;
+      const generate = Effect.fn("CommitMessageGenerator.generate")(function* (
+        snapshot: StagedSnapshot,
+        instruction: string | undefined,
+      ): Effect.fn.Return<CommitProposal, CommitMessageGeneratorError> {
+        const response = yield* model
+          .generateObject({
+            objectName: "commit_proposal",
+            prompt: buildCommitProposalPrompt(snapshot, instruction),
+            schema: CommitProposal,
+          })
+          .pipe(Effect.mapError(toCommitMessageGeneratorError));
+
+        return response.value;
+      });
+
+      return CommitMessageGenerator.of({
+        generate,
+      });
+    }),
+  );
+}

@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Context, Schema } from "effect";
 
 export const CommitInvocationInput = Schema.Struct({
   instruction: Schema.optionalKey(Schema.String),
@@ -57,3 +57,10 @@ export const defaultGitAiConfig: GitAiConfig = {
   model: "codex-medium",
   reasoningEffort: "medium",
 };
+
+export const GitAiConfigReference = Context.Reference<GitAiConfig>(
+  "@urban/gitai/commit/GitAiConfig",
+  {
+    defaultValue: () => ({ ...defaultGitAiConfig }),
+  },
+);
