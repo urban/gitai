@@ -2,10 +2,12 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Context, Effect, Layer } from "effect";
+import { OpenAiClient, OpenAiLanguageModel } from "@effect/ai-openai";
+import { Config as EffectConfig, Context, Effect, Layer } from "effect";
 import { AiError, LanguageModel } from "effect/unstable/ai";
+import { FetchHttpClient } from "effect/unstable/http";
 
-import { CommitProposal, type StagedSnapshot } from "./contracts.ts";
+import { CommitProposal, GitAiConfigReference, type StagedSnapshot } from "./contracts.ts";
 import type {
   CommitMessageGeneratorError,
   GitCommandError,
@@ -252,6 +254,25 @@ const toCommitMessageGeneratorError = (error: AiError.AiError): CommitMessageGen
   }
 };
 
+const openAiClientLayer = OpenAiClient.layerConfig({
+  apiKey: EffectConfig.redacted("OPENAI_API_KEY"),
+}).pipe(Layer.provide(FetchHttpClient.layer));
+
+const openAiLanguageModelLayer = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* GitAiConfigReference;
+
+    return OpenAiLanguageModel.layer({
+      model: config.model,
+      config: {
+        reasoning: {
+          effort: config.reasoningEffort,
+        },
+      },
+    });
+  }),
+);
+
 export class GitRepository extends Context.Service<
   GitRepository,
   {
@@ -285,6 +306,12 @@ export class CommitMessageGenerator extends Context.Service<
     ): Effect.Effect<CommitProposal, CommitMessageGeneratorError>;
   }
 >()("@urban/gitai/commit/CommitMessageGenerator") {
+  static readonly languageModelLayer = openAiLanguageModelLayer;
+
+  static readonly providerLayer = CommitMessageGenerator.languageModelLayer.pipe(
+    Layer.provide(openAiClientLayer),
+  );
+
   static readonly layer = Layer.effect(
     CommitMessageGenerator,
     Effect.gen(function* () {
@@ -308,5 +335,9 @@ export class CommitMessageGenerator extends Context.Service<
         generate,
       });
     }),
+  );
+
+  static readonly liveLayer = CommitMessageGenerator.layer.pipe(
+    Layer.provide(CommitMessageGenerator.providerLayer),
   );
 }

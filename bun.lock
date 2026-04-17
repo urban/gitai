@@ -5,6 +5,7 @@
     "": {
       "name": "@urban/gitai",
       "dependencies": {
+        "@effect/ai-openai": "4.0.0-beta.48",
         "@effect/platform-bun": "4.0.0-beta.48",
         "effect": "4.0.0-beta.48",
       },
@@ -56,6 +57,8 @@
     "@changesets/types": ["@changesets/types@6.1.0", "", {}, "sha512-rKQcJ+o1nKNgeoYRHKOS07tAMNd3YSN0uHaJOZYjBAgxfV7TUE7JE+z4BzZdQwb5hKaYbayKN5KrYV7ODb2rAA=="],
 
     "@changesets/write": ["@changesets/write@0.4.0", "", { "dependencies": { "@changesets/types": "^6.1.0", "fs-extra": "^7.0.1", "human-id": "^4.1.1", "prettier": "^2.7.1" } }, "sha512-CdTLvIOPiCNuH71pyDu3rA+Q0n65cmAbXnwWH84rKGiFumFzkmHNT8KHTMEchcxN+Kl8I54xGUhJ7l3E7X396Q=="],
+
+    "@effect/ai-openai": ["@effect/ai-openai@4.0.0-beta.48", "", { "peerDependencies": { "effect": "^4.0.0-beta.48" } }, "sha512-w9QFkIpjlN9zjkT4PsLrcArvS4YSPw3hJ45X48rd7ZDdzRofbaNTK6KcpFllO3BgBjlgdyw4JEMEUg06nucl3w=="],
 
     "@effect/language-service": ["@effect/language-service@0.84.3", "", { "bin": { "effect-language-service": "cli.js" } }, "sha512-zpxi6rLCwst/cBQd7ElwDvt36Y6Jvz8v6bCLnNiOL6OXvdLmqjOFWyzWZdMh92vvBQA/aVKhfIAAOP3o4wKt0A=="],
 

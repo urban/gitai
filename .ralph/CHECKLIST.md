@@ -20,7 +20,7 @@ Execution rule: complete tasks in order. Do not start the next task until the cu
 ## Stream 3: Proposal generation and provider boundary
 
 - [x] AI-01 — Generate one structured proposal from staged diff plus optional instruction
-- [ ] AI-02 — Add the real Codex-medium provider layer and typed provider failure mapping
+- [x] AI-02 — Add the real Codex-medium provider layer and typed provider failure mapping
 
 ## Stream 4: Workflow integration, verification, and release hygiene
 
