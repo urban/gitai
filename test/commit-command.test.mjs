@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -47,6 +47,29 @@ const createRepository = (t) => {
   runGit(repoRoot, "config", "user.email", "gitai@example.com");
 
   return repoRoot;
+};
+
+const createPathExecutable = (t) => {
+  const binDirectory = createTempDirectory();
+  const executablePath = resolve(binDirectory, "gitai");
+  const entrypointPath = resolve(process.cwd(), "src", "index.ts");
+
+  t.after(() => {
+    rmSync(binDirectory, { recursive: true, force: true });
+  });
+
+  writeFileSync(
+    executablePath,
+    `#!/bin/sh
+exec bun "${entrypointPath}" "$@"
+`,
+    {
+      encoding: "utf8",
+      mode: 0o755,
+    },
+  );
+
+  return { binDirectory, executablePath };
 };
 
 const createGeneratorLayer = (generate) =>
@@ -231,4 +254,29 @@ test("runCommitCommand renders stderr and creates no commit when the staged fing
   assert.equal(runGit(repoRoot, "rev-list", "--count", "--all").trim(), "0");
   assert.deepEqual(result.logs, ["Proposed commit message:\n\ndocs: add README"]);
   assert.deepEqual(result.errors, [`ERROR\n  Staged changes changed during review in ${repoRoot}`]);
+});
+
+test("the PATH-style gitai executable fails from a nested repository directory after resolving the repo root", (t) => {
+  const repoRoot = createRepository(t);
+  const nestedWorkingDirectory = resolve(repoRoot, "packages", "feature");
+  const { binDirectory } = createPathExecutable(t);
+
+  mkdirSync(nestedWorkingDirectory, { recursive: true });
+
+  const result = spawnSync("gitai", ["commit"], {
+    cwd: nestedWorkingDirectory,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "test-openai-api-key",
+      PATH: `${binDirectory}:${process.env.PATH ?? ""}`,
+    },
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, `ERROR\n  No staged changes were found in ${repoRoot}\n`);
 });
