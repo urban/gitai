@@ -1,47 +1,12 @@
-import { Effect, Option } from "effect";
-import * as Argument from "effect/unstable/cli/Argument";
+#!/usr/bin/env bun
+
+import { BunRuntime, BunServices } from "@effect/platform-bun";
+import { Effect, Layer } from "effect";
 import * as Command from "effect/unstable/cli/Command";
+import packageJson from "../package.json" with { type: "json" };
 
-import { decodeCommitInvocationInput } from "./commit/contracts.ts";
-import {
-  renderCommitOperationalError,
-  renderCommitOutcome,
-  writeTerminalRender,
-} from "./commit/terminal.ts";
-import { CommitWorkflow } from "./commit/workflow.ts";
-
-export const runCommitCommand = Effect.fn("runCommitCommand")(function* (
-  cwd: string,
-  input: {
-    readonly instruction?: string;
-  },
-) {
-  const workflow = yield* CommitWorkflow;
-  const invocationInput = yield* Effect.sync(() => decodeCommitInvocationInput(input));
-  const rendered = yield* workflow.run(cwd, invocationInput).pipe(
-    Effect.match({
-      onFailure: renderCommitOperationalError,
-      onSuccess: renderCommitOutcome,
-    }),
-  );
-
-  yield* writeTerminalRender(rendered);
-});
-
-const makeCommitCommand = (cwd: string) =>
-  Command.make(
-    "commit",
-    {
-      instruction: Argument.string("instruction").pipe(Argument.optional),
-    },
-    ({ instruction }) => {
-      const value = Option.getOrUndefined(instruction);
-
-      return value === undefined
-        ? runCommitCommand(cwd, {})
-        : runCommitCommand(cwd, { instruction: value });
-    },
-  ).pipe(Command.withDescription("Generate a commit proposal from the staged diff"));
+import { makeCommitCommand, validateCommitCommandGrammar } from "./commands/commit.ts";
+import { CommitWorkflow } from "./services/CommitWorkflow.ts";
 
 export const makeCli = (cwd: string) =>
   Command.make("gitai").pipe(
@@ -49,12 +14,19 @@ export const makeCli = (cwd: string) =>
     Command.withSubcommands([makeCommitCommand(cwd)]),
   );
 
-export const validateCommitGrammar = (args: ReadonlyArray<string>): string | undefined => {
-  if (args[0] !== "commit") {
-    return undefined;
+export const MainLayer = CommitWorkflow.liveLayer.pipe(Layer.provideMerge(BunServices.layer));
+
+export const makeMain = (cwd: string) =>
+  makeCli(cwd).pipe(Command.run({ version: packageJson.version }), Effect.provide(MainLayer));
+
+if (import.meta.main) {
+  const args = process.argv.slice(2);
+  const grammarError = validateCommitCommandGrammar(args);
+
+  if (grammarError !== undefined) {
+    console.error(`ERROR\n  ${grammarError}`);
+    process.exit(1);
   }
 
-  return args.length <= 2
-    ? undefined
-    : "gitai commit accepts zero or one optional instruction string";
-};
+  BunRuntime.runMain(makeMain(process.cwd()));
+}

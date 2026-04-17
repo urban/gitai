@@ -5,8 +5,8 @@ import { Effect, Layer } from "effect";
 import { AiError, LanguageModel } from "effect/unstable/ai";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 
-import { CommitMessageGenerator } from "../src/commit/services.ts";
-import { renderCommitOperationalError } from "../src/commit/terminal.ts";
+import { renderCommitOperationalError } from "../commands/commit/render.ts";
+import { CommitMessageGenerator } from "./CommitMessageGenerator.ts";
 
 const stagedSnapshot = {
   repoRoot: "/tmp/repo",

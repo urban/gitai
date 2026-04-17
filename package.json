@@ -2,7 +2,7 @@
   "name": "@urban/gitai",
   "version": "0.0.0",
   "bin": {
-    "gitai": "./src/index.ts"
+    "gitai": "./src/cli.ts"
   },
   "files": [
     "src/**/*.ts"
@@ -10,10 +10,12 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    ".": "./src/index.ts"
+    ".": "./src/cli.ts"
   },
   "scripts": {
     "check": "bun run lint && bun run typecheck && bun run test",
+    "cli": "bun src/cli.ts",
+    "cli-watch": "bun --watch src/cli.ts",
     "lint": "oxfmt && oxlint --fix",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json --noEmit"

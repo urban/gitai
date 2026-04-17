@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { Effect } from "effect";
 
-import { GitRepository } from "../src/commit/services.ts";
+import { GitRepository } from "./GitRepository.ts";
 
 const createTempDirectory = () =>
   realpathSync(mkdtempSync(join(tmpdir(), "gitai-git-repository-")));

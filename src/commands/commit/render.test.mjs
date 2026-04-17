@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { renderCommitOutcome, renderCommitOperationalError } from "../src/commit/terminal.ts";
+import { renderCommitOutcome, renderCommitOperationalError } from "./render.ts";
 import {
   CommitMessageGeneratorError,
   GitCommandError,
   IndexChangedDuringReviewError,
   NoStagedChangesError,
   NotGitRepositoryError,
-} from "../src/commit/errors.ts";
+} from "../../errors/CommitError.ts";
 
 test("operational failures render to stderr-facing output", () => {
   const renders = [

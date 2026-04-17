@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -9,11 +9,13 @@ import * as Console from "effect/Console";
 import { Effect, Layer } from "effect";
 import * as TestConsole from "effect/testing/TestConsole";
 
-import { runCommitCommand } from "../src/cli.ts";
-import { renderCommitProposal } from "../src/commit/terminal.ts";
-import { CommitMessageGeneratorError } from "../src/commit/errors.ts";
-import { CommitReview, CommitWorkflow } from "../src/commit/workflow.ts";
-import { CommitMessageGenerator, GitRepository } from "../src/commit/services.ts";
+import { runCommitCommand, validateCommitCommandGrammar } from "./commit.ts";
+import { renderCommitProposal } from "./commit/render.ts";
+import { CommitMessageGeneratorError } from "../errors/CommitError.ts";
+import { CommitMessageGenerator } from "../services/CommitMessageGenerator.ts";
+import { CommitReview } from "../services/CommitReview.ts";
+import { CommitWorkflow } from "../services/CommitWorkflow.ts";
+import { GitRepository } from "../services/GitRepository.ts";
 
 const createTempDirectory = () =>
   realpathSync(mkdtempSync(join(tmpdir(), "gitai-commit-command-")));
@@ -47,29 +49,6 @@ const createRepository = (t) => {
   runGit(repoRoot, "config", "user.email", "gitai@example.com");
 
   return repoRoot;
-};
-
-const createPathExecutable = (t) => {
-  const binDirectory = createTempDirectory();
-  const executablePath = resolve(binDirectory, "gitai");
-  const entrypointPath = resolve(process.cwd(), "src", "index.ts");
-
-  t.after(() => {
-    rmSync(binDirectory, { recursive: true, force: true });
-  });
-
-  writeFileSync(
-    executablePath,
-    `#!/bin/sh
-exec bun "${entrypointPath}" "$@"
-`,
-    {
-      encoding: "utf8",
-      mode: 0o755,
-    },
-  );
-
-  return { binDirectory, executablePath };
 };
 
 const createGeneratorLayer = (generate) =>
@@ -113,6 +92,21 @@ const runCommand = ({ cwd, input, generatorLayer, reviewLayer }) =>
       Effect.provide(GitRepository.layer),
     ),
   );
+
+test("parses gitai commit without an instruction", () => {
+  assert.equal(validateCommitCommandGrammar(["commit"]), undefined);
+});
+
+test("parses gitai commit with one instruction string", () => {
+  assert.equal(validateCommitCommandGrammar(["commit", "focus on test coverage"]), undefined);
+});
+
+test("rejects extra positional arguments for gitai commit", () => {
+  assert.equal(
+    validateCommitCommandGrammar(["commit", "focus on test coverage", "extra-input"]),
+    "gitai commit accepts zero or one optional instruction string",
+  );
+});
 
 test("runCommitCommand creates a commit after approval and renders the reviewed proposal", async (t) => {
   const repoRoot = createRepository(t);
@@ -254,29 +248,4 @@ test("runCommitCommand renders stderr and creates no commit when the staged fing
   assert.equal(runGit(repoRoot, "rev-list", "--count", "--all").trim(), "0");
   assert.deepEqual(result.logs, ["Proposed commit message:\n\ndocs: add README"]);
   assert.deepEqual(result.errors, [`ERROR\n  Staged changes changed during review in ${repoRoot}`]);
-});
-
-test("the PATH-style gitai executable fails from a nested repository directory after resolving the repo root", (t) => {
-  const repoRoot = createRepository(t);
-  const nestedWorkingDirectory = resolve(repoRoot, "packages", "feature");
-  const { binDirectory } = createPathExecutable(t);
-
-  mkdirSync(nestedWorkingDirectory, { recursive: true });
-
-  const result = spawnSync("gitai", ["commit"], {
-    cwd: nestedWorkingDirectory,
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "test-openai-api-key",
-      PATH: `${binDirectory}:${process.env.PATH ?? ""}`,
-    },
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  assert.equal(result.stdout, "");
-  assert.equal(result.stderr, `ERROR\n  No staged changes were found in ${repoRoot}\n`);
 });

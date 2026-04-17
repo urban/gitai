@@ -59,7 +59,7 @@ export const defaultGitAiConfig: GitAiConfig = {
 };
 
 export const GitAiConfigReference = Context.Reference<GitAiConfig>(
-  "@urban/gitai/commit/GitAiConfig",
+  "@urban/gitai/domain/Commit/GitAiConfig",
   {
     defaultValue: () => ({ ...defaultGitAiConfig }),
   },
