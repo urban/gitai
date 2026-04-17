@@ -33,7 +33,7 @@ Objective: Establish a runnable Bun-backed Effect CLI with typed boundaries that
 #### Task CLI-01
 
 - Title: Boot the `gitai commit` command under Bun with the approved grammar
-- Status: Not started
+- Status: Completed
 - Blocked by: None
 - Plan references:
   - Stream 1: CLI foundation and runtime composition
@@ -49,7 +49,7 @@ Objective: Establish a runnable Bun-backed Effect CLI with typed boundaries that
 #### Task CLI-02
 
 - Title: Define shared command contracts, config, and stderr-facing operational errors
-- Status: Not started
+- Status: Completed
 - Blocked by: CLI-01
 - Plan references:
   - Stream 1: CLI foundation and runtime composition
@@ -69,7 +69,7 @@ Objective: Deliver semantic Git behavior for repo discovery, staged snapshot loa
 #### Task GIT-01
 
 - Title: Load a staged snapshot from the current working directory
-- Status: Not started
+- Status: Completed
 - Blocked by: CLI-02
 - Plan references:
   - Stream 2: Git repository snapshot and commit boundary
@@ -85,7 +85,7 @@ Objective: Deliver semantic Git behavior for repo discovery, staged snapshot loa
 #### Task GIT-02
 
 - Title: Commit the exact approved message with fingerprint revalidation
-- Status: Not started
+- Status: Completed
 - Blocked by: GIT-01
 - Plan references:
   - Stream 2: Git repository snapshot and commit boundary
@@ -105,7 +105,7 @@ Objective: Turn a staged snapshot into one schema-validated proposal through an 
 #### Task AI-01
 
 - Title: Generate one structured proposal from staged diff plus optional instruction
-- Status: Not started
+- Status: Completed
 - Blocked by: CLI-02, GIT-01
 - Plan references:
   - Stream 3: Proposal generation and provider boundary
@@ -121,7 +121,7 @@ Objective: Turn a staged snapshot into one schema-validated proposal through an 
 #### Task AI-02
 
 - Title: Add the real Codex-medium provider layer and typed provider failure mapping
-- Status: Not started
+- Status: Completed
 - Blocked by: AI-01
 - Plan references:
   - Stream 3: Proposal generation and provider boundary
@@ -141,7 +141,7 @@ Objective: Compose the full review workflow, verify fail-closed behavior end to 
 #### Task FLOW-01
 
 - Title: Compose the approve-or-reject workflow across CLI, Git, and generator boundaries
-- Status: Not started
+- Status: Completed
 - Blocked by: GIT-02, AI-02
 - Plan references:
   - Stream 4: Workflow integration, verification, and release hygiene
@@ -157,7 +157,7 @@ Objective: Compose the full review workflow, verify fail-closed behavior end to 
 #### Task REL-01
 
 - Title: Close verification, changeset, and repo-root validation for the first release slice
-- Status: Not started
+- Status: Completed
 - Blocked by: FLOW-01
 - Plan references:
   - Stream 4: Workflow integration, verification, and release hygiene
@@ -183,6 +183,6 @@ Objective: Compose the full review workflow, verify fail-closed behavior end to 
 
 ## Tracking Notes
 
-- Active stream: Stream 1: CLI foundation and runtime composition
+- Active stream: None
 - Global blockers: None
 - TODO: Confirm: None

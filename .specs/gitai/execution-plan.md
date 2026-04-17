@@ -99,37 +99,37 @@ This plan coordinates the first implementation of `gitai commit` from an approve
 
 ### Stream 1: CLI foundation and runtime composition
 
-- [ ] Add the Bun-backed CLI entrypoint, package executable wiring, and required Effect runtime dependencies.
+- [x] Add the Bun-backed CLI entrypoint, package executable wiring, and required Effect runtime dependencies.
   - Traceability: US1.3; FR1.1; TC3.1, TC3.3, TC3.4; DEP6.2, DEP6.3; CommitCommand
   - Verification focus: `gitai commit` parses under Bun, exposes the intended command surface, and can be invoked as an installed CLI entrypoint.
-- [ ] Define shared typed contracts for command input, review outcomes, config, and stderr-facing operational errors.
+- [x] Define shared typed contracts for command input, review outcomes, config, and stderr-facing operational errors.
   - Traceability: US1.2; FR1.2, FR1.3; NFR2.2, NFR2.3; Interfaces and Contracts
   - Verification focus: zero-or-one instruction input is enforced at the boundary, and command outcomes distinguish review flow from operational failure without illegal states.
 
 ### Stream 2: Git repository snapshot and commit boundary
 
-- [ ] Implement repository discovery plus staged snapshot loading behind `GitRepository`.
+- [x] Implement repository discovery plus staged snapshot loading behind `GitRepository`.
   - Traceability: US1.1, US1.3, US1.6, US1.7; FR1.1, FR1.6, FR1.7; DR4.1, DR4.2; IR5.1; GitRepository
   - Verification focus: temp-repo coverage proves current-working-directory repo resolution, staged diff capture, not-a-repo aborts, and no-staged-changes aborts.
-- [ ] Implement exact approved-message commit creation with temp-message-file delivery and fingerprint revalidation.
+- [x] Implement exact approved-message commit creation with temp-message-file delivery and fingerprint revalidation.
   - Traceability: US1.4; FR1.4; DR4.3; IR5.2; Failure and Recovery Strategy
   - Verification focus: approval creates one commit with the exact reviewed message only when the staged fingerprint is unchanged; drift aborts before commit.
 
 ### Stream 3: Proposal generation and provider boundary
 
-- [ ] Implement structured proposal generation from `StagedSnapshot` plus optional instruction string.
+- [x] Implement structured proposal generation from `StagedSnapshot` plus optional instruction string.
   - Traceability: US1.1, US1.2; FR1.2; DR4.4; TC3.6; CommitMessageGenerator
   - Verification focus: fake-model coverage proves staged patch plus optional instruction produce one decoded proposal and preserve the immutable review snapshot contract.
-- [ ] Map provider and model failures into typed operational errors and default the provider layer to Codex-medium configuration.
+- [x] Map provider and model failures into typed operational errors and default the provider layer to Codex-medium configuration.
   - Traceability: US1.8; FR1.8; TC3.5, TC3.6; IR5.4; Interfaces and Contracts
   - Verification focus: provider failures surface as stderr-bound operational errors with no partial commit behavior and no silent fallback path.
 
 ### Stream 4: Workflow integration, verification, and release hygiene
 
-- [ ] Compose `CommitWorkflow` with binary review prompting and fail-closed approve-or-reject behavior.
+- [x] Compose `CommitWorkflow` with binary review prompting and fail-closed approve-or-reject behavior.
   - Traceability: US1.4, US1.5, US1.6, US1.7, US1.8; FR1.3, FR1.4, FR1.5, FR1.6, FR1.7, FR1.8; NFR2.1, NFR2.2, NFR2.3; CommitWorkflow
   - Verification focus: approve creates the commit, reject aborts without one, and all invalid-context or provider failures reach stderr without side effects.
-- [ ] Complete integration coverage, repository validation, and release hygiene for the first implementation slice.
+- [x] Complete integration coverage, repository validation, and release hygiene for the first implementation slice.
   - Traceability: NFR2.4; IR5.3; Testing Strategy; repository workflow constraints from AGENTS.md
   - Verification focus: temp-repo end-to-end tests, nested-directory manual smoke test, one changeset present, and `bun run check` passes from repo root.
 
@@ -159,9 +159,9 @@ This plan coordinates the first implementation of `gitai commit` from an approve
 
 ## Progress Tracking
 
-- Status: Not started
-- Active stream: Stream 1: CLI foundation and runtime composition
-- Notes: Spec pack is approved. The current repo has an empty `src/index.ts`, placeholder tests, and no runtime Effect dependencies, so the first implementation move is establishing the executable/runtime skeleton and shared typed contracts.
+- Status: Completed
+- Active stream: None
+- Notes: The first implementation slice is complete. `gitai commit` now ships as a Bun-backed Effect CLI with typed Git and provider boundaries, approve-or-reject workflow integration, nested-directory executable coverage, one changeset, and a passing repo-root `bun run check` gate.
 
 ## Further Notes
 
