@@ -1,0 +1,2089 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Artifact Approval View: charter.md</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark light;
+        --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+        --font-display: "Instrument Serif", "Iowan Old Style", serif;
+        --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
+        --bg: #081018;
+        --bg-soft: #0f1722;
+        --surface: rgba(15, 24, 36, 0.88);
+        --surface-strong: rgba(20, 32, 48, 0.96);
+        --surface-recessed: rgba(7, 13, 21, 0.92);
+        --text: #ebf0f6;
+        --text-dim: #97a9c0;
+        --border: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.18);
+        --shadow: 0 28px 60px rgba(0, 0, 0, 0.28);
+        --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.18);
+        --grid-line: rgba(255, 255, 255, 0.05);
+        --rail: rgba(255, 255, 255, 0.09);
+        --code-bg: rgba(255, 255, 255, 0.05);
+        --accent: #c79a32;
+        --accent-soft: rgba(199, 154, 50, 0.14);
+        --info: #4f88b8;
+        --info-soft: rgba(79, 136, 184, 0.14);
+        --success: #5f8d74;
+        --success-soft: rgba(95, 141, 116, 0.14);
+        --warning: #b97443;
+        --warning-soft: rgba(185, 116, 67, 0.16);
+        --neutral: #8ea2ba;
+        --neutral-soft: rgba(142, 162, 186, 0.12);
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f5f1e9;
+          --bg-soft: #ebe2d4;
+          --surface: rgba(255, 253, 249, 0.92);
+          --surface-strong: rgba(255, 255, 255, 0.98);
+          --surface-recessed: rgba(237, 229, 218, 0.9);
+          --text: #212b37;
+          --text-dim: #627181;
+          --border: rgba(33, 43, 55, 0.08);
+          --border-strong: rgba(33, 43, 55, 0.16);
+          --shadow: 0 24px 48px rgba(60, 67, 84, 0.12);
+          --shadow-soft: 0 12px 24px rgba(60, 67, 84, 0.08);
+          --grid-line: rgba(33, 43, 55, 0.05);
+          --rail: rgba(33, 43, 55, 0.09);
+          --code-bg: rgba(33, 43, 55, 0.05);
+          --accent: #a66d1f;
+          --accent-soft: rgba(166, 109, 31, 0.1);
+          --info: #2f6690;
+          --info-soft: rgba(47, 102, 144, 0.1);
+          --success: #376b52;
+          --success-soft: rgba(55, 107, 82, 0.1);
+          --warning: #a25d29;
+          --warning-soft: rgba(162, 93, 41, 0.12);
+          --neutral: #6f8092;
+          --neutral-soft: rgba(111, 128, 146, 0.1);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-body);
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 0%, var(--accent-soft), transparent 34%),
+          radial-gradient(circle at 100% 10%, var(--info-soft), transparent 26%),
+          linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px), var(--bg);
+        background-size:
+          auto,
+          auto,
+          28px 28px,
+          28px 28px,
+          auto;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body[data-approval-view="rich-v1"] {
+        font-variant-numeric: tabular-nums;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.18em;
+      }
+
+      code,
+      pre,
+      .section-kicker,
+      .toc,
+      .glance-card__label,
+      .traceability-item__id,
+      .status-pill,
+      .hero-note__label,
+      .diagram-shell__label,
+      .visual-evidence__label,
+      .scope-card__label,
+      .review-card__label,
+      .callout__label,
+      .validator-card__label,
+      .delta-card__label,
+      .timeline-item__marker,
+      .evidence-source__label,
+      .section-why {
+        font-family: var(--font-mono);
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        margin: 0;
+      }
+
+      .page {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 24px 20px 72px;
+      }
+
+      .mobile-nav {
+        display: none;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        margin-bottom: 16px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface-strong) 88%, transparent 12%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        overflow-x: auto;
+        gap: 10px;
+        white-space: nowrap;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .mobile-nav a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        text-decoration: none;
+        color: var(--text-dim);
+        font-size: 0.82rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 24px;
+        max-height: calc(100dvh - 48px);
+        overflow-y: auto;
+        padding-right: 8px;
+      }
+
+      .toc {
+        border-left: 1px solid var(--rail);
+        padding-left: 14px;
+      }
+
+      .toc-title {
+        margin: 0 0 12px;
+        padding: 0 0 12px 10px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        font-size: 0.68rem;
+        font-weight: 600;
+        position: relative;
+      }
+
+      .toc-title::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 2px;
+        bottom: 14px;
+        width: 2px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, var(--accent), transparent);
+      }
+
+      .toc a {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 10px 12px;
+        border-left: 2px solid transparent;
+        border-radius: 12px;
+        color: var(--text-dim);
+        text-decoration: none;
+        transition:
+          background 140ms ease,
+          color 140ms ease,
+          border-color 140ms ease,
+          transform 140ms ease;
+        font-size: 0.83rem;
+        line-height: 1.35;
+      }
+
+      .toc a:hover,
+      .toc a.active,
+      .mobile-nav a.active {
+        color: var(--text);
+        background: color-mix(in srgb, var(--surface-strong) 84%, var(--accent-soft) 16%);
+        border-left-color: var(--accent);
+        transform: translateX(2px);
+      }
+
+      .toc-index {
+        color: var(--accent);
+        flex: none;
+        opacity: 0.92;
+      }
+
+      .main {
+        min-width: 0;
+        display: grid;
+        gap: 20px;
+      }
+
+      .page-hero,
+      .glance,
+      .approval-section {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .page-hero {
+        position: relative;
+        padding: 34px 34px 30px;
+        display: grid;
+        gap: 0;
+        background:
+          linear-gradient(
+            145deg,
+            color-mix(in srgb, var(--surface-strong) 86%, var(--accent-soft) 14%),
+            var(--surface)
+          ),
+          linear-gradient(90deg, var(--rail) 1px, transparent 1px),
+          linear-gradient(var(--rail) 1px, transparent 1px);
+        background-size:
+          auto,
+          24px 24px,
+          24px 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .page-hero::before,
+      .glance::before,
+      .approval-section::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--section-accent, var(--accent)), transparent 82%);
+      }
+
+      .page-hero__label,
+      .glance__label {
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        margin-bottom: 14px;
+      }
+
+      h1 {
+        font-size: clamp(2.7rem, 6vw, 4.25rem);
+        line-height: 0.94;
+        letter-spacing: -0.03em;
+        max-width: 11ch;
+        text-wrap: balance;
+      }
+
+      .page-hero p {
+        margin: 18px 0 0;
+        max-width: 56ch;
+        color: var(--text-dim);
+        font-size: 1.02rem;
+      }
+
+      .glance {
+        position: relative;
+        padding: 22px 24px 24px;
+      }
+
+      .glance-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      .glance-card {
+        --glance-accent: var(--accent);
+        min-width: 0;
+        position: relative;
+        padding: 18px 16px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface-strong) 90%, transparent 10%);
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .glance-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--glance-accent), transparent 82%);
+      }
+
+      .glance-card--accent {
+        --glance-accent: var(--accent);
+      }
+      .glance-card--info {
+        --glance-accent: var(--info);
+      }
+      .glance-card--success {
+        --glance-accent: var(--success);
+      }
+      .glance-card--warning {
+        --glance-accent: var(--warning);
+      }
+      .glance-card--neutral {
+        --glance-accent: var(--neutral);
+      }
+
+      .glance-card__label {
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.68rem;
+      }
+
+      .glance-card__value {
+        font-size: clamp(1.7rem, 3vw, 2.25rem);
+        line-height: 1;
+        font-weight: 700;
+      }
+
+      .glance-card p {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      .sections {
+        display: grid;
+        gap: 18px;
+      }
+
+      .approval-section {
+        --section-accent: var(--neutral);
+        position: relative;
+        padding: 26px 24px 24px;
+        animation: fadeUp 360ms ease both;
+        animation-delay: calc(var(--section-index, 0) * 0.03s);
+        background: var(--surface);
+      }
+
+      .approval-section[data-section-tone="accent"] {
+        --section-accent: var(--accent);
+      }
+      .approval-section[data-section-tone="info"] {
+        --section-accent: var(--info);
+      }
+      .approval-section[data-section-tone="success"] {
+        --section-accent: var(--success);
+      }
+      .approval-section[data-section-tone="warning"] {
+        --section-accent: var(--warning);
+      }
+      .approval-section[data-section-tone="neutral"] {
+        --section-accent: var(--neutral);
+      }
+
+      .approval-section[data-section-emphasis="dominant"] {
+        border-color: color-mix(in srgb, var(--section-accent) 34%, var(--border-strong));
+        background: color-mix(in srgb, var(--surface-strong) 90%, transparent 10%);
+        box-shadow: var(--shadow);
+      }
+
+      .approval-section[data-section-emphasis="recessed"] {
+        background: var(--surface-recessed);
+        opacity: 0.98;
+      }
+
+      .approval-section[data-section-style="hero"] {
+        padding-top: 30px;
+      }
+      .approval-section[data-section-style="recessed"] {
+        border-style: dashed;
+      }
+      .approval-section[data-section-kind="snapshot"] {
+        background: var(--surface-recessed);
+      }
+
+      .section-top {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+
+      .section-heading {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .section-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.7rem;
+      }
+
+      .section-number {
+        color: var(--section-accent);
+      }
+
+      h2 {
+        font-size: clamp(1.7rem, 4vw, 2.5rem);
+        line-height: 0.98;
+        letter-spacing: -0.02em;
+        text-wrap: balance;
+      }
+
+      .section-why {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+
+      .section-content,
+      .section-content > * {
+        min-width: 0;
+      }
+
+      .hero-stack,
+      .split-hero,
+      .diagram-led,
+      .scope-grid,
+      .review-card-grid,
+      .callout-stack,
+      .impact-timeline,
+      .traceability-list,
+      .validator-grid,
+      .snapshot-panel,
+      .paired-grid,
+      .checklist,
+      .ledger,
+      .roster,
+      .matrix-fallback,
+      .mini-panel-grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .split-hero,
+      .diagram-led,
+      .scope-grid,
+      .paired-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .diagram-led__visual,
+      .split-hero__visual,
+      .diagram-led__text,
+      .split-hero__main {
+        min-width: 0;
+      }
+
+      .summary-points,
+      .review-card-grid,
+      .mini-panel-grid,
+      .roster {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .summary-point,
+      .review-card,
+      .mini-panel,
+      .paired-panel,
+      .scope-card,
+      .visual-card,
+      .roster-entry,
+      .validator-card,
+      .delta-card,
+      .callout,
+      .timeline-item,
+      .ledger-row,
+      .matrix-fallback-row {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface-strong) 88%, transparent 12%);
+        padding: 16px;
+        box-shadow: var(--shadow-soft);
+        min-width: 0;
+      }
+
+      .summary-point,
+      .timeline-item,
+      .ledger-row,
+      .matrix-fallback-row,
+      .checklist-item {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+
+      .summary-point__index,
+      .timeline-item__marker,
+      .ledger-row__index,
+      .matrix-fallback-row__index,
+      .checklist-item__marker {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--section-accent) 18%, transparent);
+        color: var(--section-accent);
+        font-family: var(--font-mono);
+        font-size: 0.86rem;
+        border: 1px solid color-mix(in srgb, var(--section-accent) 28%, var(--border));
+      }
+
+      .checklist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .checklist-item {
+        list-style: none;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface-strong) 88%, transparent 12%);
+        padding: 16px;
+      }
+
+      .checklist-item__marker::before {
+        content: "✓";
+        color: var(--success);
+        margin-right: 4px;
+      }
+
+      .review-card__label,
+      .callout__label,
+      .validator-card__label,
+      .delta-card__label,
+      .scope-card__label,
+      .visual-evidence__label,
+      .hero-note__label,
+      .evidence-source__label {
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.7rem;
+        margin-bottom: 10px;
+      }
+
+      .hero-note {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface-strong) 90%, transparent 10%);
+        width: fit-content;
+      }
+
+      .delta-grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .callout {
+        border-left: 4px solid var(--warning);
+        background: color-mix(in srgb, var(--surface-strong) 86%, var(--warning-soft) 14%);
+      }
+
+      .validator-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .validator-card__top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .status-pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        border: 1px solid var(--border);
+      }
+
+      .status-pill--passed,
+      .validator-card--passed .status-pill {
+        color: var(--success);
+        background: var(--success-soft);
+        border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+      }
+
+      .traceability-item {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface-strong) 88%, transparent 12%);
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .traceability-item summary {
+        list-style: none;
+        cursor: pointer;
+        display: flex;
+        gap: 12px;
+        align-items: start;
+        padding: 16px;
+      }
+
+      .traceability-item summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .traceability-item__id {
+        color: var(--section-accent);
+        font-size: 0.78rem;
+        margin-top: 0.2rem;
+        flex: none;
+      }
+
+      .traceability-item__body {
+        padding: 0 16px 16px;
+        color: var(--text-dim);
+      }
+
+      .traceability-meta,
+      .evidence-source {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 10px;
+        color: var(--text-dim);
+        font-size: 0.84rem;
+      }
+
+      .traceability-meta__label,
+      .evidence-source__label {
+        color: var(--text-dim);
+      }
+
+      .snapshot-panel {
+        gap: 18px;
+      }
+
+      .snapshot-grid {
+        margin: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .snapshot-grid__row {
+        display: grid;
+        grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+        gap: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .snapshot-grid__row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .snapshot-grid dt,
+      .snapshot-grid dd {
+        margin: 0;
+      }
+
+      .snapshot-grid__value--mono {
+        font-family: var(--font-mono);
+        font-size: 0.86rem;
+        word-break: break-word;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+
+      th,
+      td {
+        padding: 12px 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      thead th {
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        background: color-mix(in srgb, var(--surface-strong) 92%, transparent 8%);
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .detail-panel,
+      details {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--surface-strong) 90%, transparent 10%);
+        padding: 0;
+      }
+
+      .detail-panel summary,
+      details summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 12px 14px;
+        color: var(--text-dim);
+        font-size: 0.84rem;
+        font-family: var(--font-mono);
+      }
+
+      .detail-panel summary::-webkit-details-marker,
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .code-file,
+      .code-block,
+      .mermaid-source {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 0.84rem;
+      }
+
+      .code-file__header {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-dim);
+        background: color-mix(in srgb, var(--surface-strong) 92%, transparent 8%);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.68rem;
+      }
+
+      .code-block {
+        padding: 14px;
+        background: var(--code-bg);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .visual-evidence {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .visual-evidence__grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .diagram-shell {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface-strong) 90%, transparent 10%);
+        overflow: hidden;
+      }
+
+      .diagram-shell__head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .diagram-shell__label {
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.68rem;
+      }
+
+      .zoom-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .zoom-controls button {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        padding: 6px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .mermaid-wrap {
+        min-height: 240px;
+        background: color-mix(in srgb, var(--bg-soft) 72%, transparent 28%);
+      }
+
+      .mermaid-viewport {
+        position: relative;
+        overflow: hidden;
+        min-height: 240px;
+        cursor: grab;
+      }
+
+      .mermaid-viewport.is-dragging {
+        cursor: grabbing;
+      }
+
+      .mermaid-canvas {
+        transform-origin: 0 0;
+        will-change: transform;
+        padding: 18px;
+        width: max-content;
+        min-width: 100%;
+      }
+
+      .mermaid-canvas svg {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .rich-list {
+        margin: 0;
+        padding-left: 18px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .rich-list__text {
+        font-weight: 500;
+      }
+
+      .rich-list__detail,
+      .review-card__body,
+      .callout__body,
+      .validator-card,
+      .paired-panel__body,
+      .scope-card__body,
+      .summary-point__body,
+      .timeline-item__body,
+      .ledger-row__body,
+      .matrix-fallback-row__body,
+      .roster-entry__body,
+      .visual-card__body,
+      .mini-panel__body {
+        color: var(--text-dim);
+      }
+
+      .roster-entry h3,
+      .paired-panel h3 {
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+      }
+
+      .empty-state {
+        padding: 18px;
+        border: 1px dashed var(--border-strong);
+        border-radius: 16px;
+        color: var(--text-dim);
+        background: color-mix(in srgb, var(--surface-strong) 88%, transparent 12%);
+      }
+
+      [data-section-kind="paired-lists"] .paired-panel,
+      [data-section-kind="checklist"] .checklist-item,
+      [data-section-kind="ledger"] .ledger-row,
+      [data-section-kind="matrix"] .matrix-table,
+      [data-section-kind="roster"] .roster-entry,
+      [data-section-kind="diagram-led-summary"] .diagram-led,
+      [data-section-kind="snapshot"] .snapshot-panel {
+        min-width: 0;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 1160px) {
+        .glance-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 980px) {
+        .mobile-nav {
+          display: flex;
+        }
+
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .split-hero,
+        .diagram-led,
+        .scope-grid,
+        .paired-grid,
+        .glance-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          padding: 18px 14px 48px;
+        }
+
+        .page-hero,
+        .glance,
+        .approval-section {
+          border-radius: 20px;
+        }
+
+        .page-hero {
+          padding: 28px 20px 24px;
+        }
+
+        .approval-section {
+          padding: 22px 18px 18px;
+        }
+
+        .snapshot-grid__row,
+        .summary-point,
+        .timeline-item,
+        .ledger-row,
+        .matrix-fallback-row,
+        .checklist-item {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body data-approval-view="rich-v1">
+    <div class="page">
+      <nav class="mobile-nav" aria-label="Approval sections">
+        <a href="#section-goals-and-non-goals" data-toc-link
+          ><span class="toc-index">01</span><span>Goals and Non-Goals</span></a
+        ><a href="#section-actors-and-personas" data-toc-link
+          ><span class="toc-index">02</span><span>Actors and Personas in Scope</span></a
+        ><a href="#section-success-criteria-that-define-done" data-toc-link
+          ><span class="toc-index">03</span><span>Success Criteria that Define Done</span></a
+        ><a href="#section-decisions-required-for-approval" data-toc-link
+          ><span class="toc-index">04</span><span>Decisions Required for Approval</span></a
+        ><a href="#section-scope-risks-and-open-questions" data-toc-link
+          ><span class="toc-index">05</span><span>Scope Risks and Open Questions</span></a
+        ><a href="#section-traceability-map" data-toc-link
+          ><span class="toc-index">06</span><span>Traceability Map</span></a
+        ><a href="#section-validator-status" data-toc-link
+          ><span class="toc-index">07</span><span>Validator Status</span></a
+        ><a href="#section-downstream-impact-if-approved" data-toc-link
+          ><span class="toc-index">08</span><span>Downstream Impact if Approved</span></a
+        ><a href="#section-snapshot-identity" data-toc-link
+          ><span class="toc-index">09</span><span>Snapshot Identity</span></a
+        >
+      </nav>
+
+      <div class="layout">
+        <aside class="sidebar" id="approval-toc" aria-label="Approval sections">
+          <nav class="toc">
+            <div class="toc-title">Charter Approval</div>
+            <a href="#section-goals-and-non-goals" data-toc-link
+              ><span class="toc-index">01</span><span>Goals and Non-Goals</span></a
+            ><a href="#section-actors-and-personas" data-toc-link
+              ><span class="toc-index">02</span><span>Actors and Personas in Scope</span></a
+            ><a href="#section-success-criteria-that-define-done" data-toc-link
+              ><span class="toc-index">03</span><span>Success Criteria that Define Done</span></a
+            ><a href="#section-decisions-required-for-approval" data-toc-link
+              ><span class="toc-index">04</span><span>Decisions Required for Approval</span></a
+            ><a href="#section-scope-risks-and-open-questions" data-toc-link
+              ><span class="toc-index">05</span><span>Scope Risks and Open Questions</span></a
+            ><a href="#section-traceability-map" data-toc-link
+              ><span class="toc-index">06</span><span>Traceability Map</span></a
+            ><a href="#section-validator-status" data-toc-link
+              ><span class="toc-index">07</span><span>Validator Status</span></a
+            ><a href="#section-downstream-impact-if-approved" data-toc-link
+              ><span class="toc-index">08</span><span>Downstream Impact if Approved</span></a
+            ><a href="#section-snapshot-identity" data-toc-link
+              ><span class="toc-index">09</span><span>Snapshot Identity</span></a
+            >
+          </nav>
+        </aside>
+
+        <main class="main">
+          <header class="page-hero" style="--section-accent: var(--accent)">
+            <div class="page-hero__label">Charter Approval</div>
+            <h1>Artifact Approval View: charter.md</h1>
+            <p>
+              Review scope edges, actors, done criteria, and early approval calls before downstream
+              specs branch out.
+            </p>
+          </header>
+
+          <section
+            class="glance"
+            id="approval-glance"
+            data-approval-glance
+            style="--section-accent: var(--accent)"
+          >
+            <div class="glance__label">At a Glance</div>
+            <div class="glance-grid">
+              <article
+                class="glance-card glance-card--accent"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Scope edges</div>
+                <div class="glance-card__value">2</div>
+                <p>Goals and exclusions called out explicitly.</p>
+              </article>
+              <article
+                class="glance-card glance-card--info"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Actors</div>
+                <div class="glance-card__value">3</div>
+                <p>Named actors or personas shaping downstream work.</p>
+              </article>
+              <article
+                class="glance-card glance-card--success"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Done checks</div>
+                <div class="glance-card__value">6</div>
+                <p>Success criteria the reviewer should confirm.</p>
+              </article>
+              <article
+                class="glance-card glance-card--neutral"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Decision gates</div>
+                <div class="glance-card__value">3</div>
+                <p>Explicit approvals needed to lock scope.</p>
+              </article>
+              <article
+                class="glance-card glance-card--info"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Evidence claims</div>
+                <div class="glance-card__value">5</div>
+                <p>Claims backed by exact charter quotes.</p>
+              </article>
+              <article
+                class="glance-card glance-card--info"
+                data-glance-card
+                data-glance-source="approval"
+              >
+                <div class="glance-card__label">Visuals</div>
+                <div class="glance-card__value">0</div>
+                <p>Visual evidence carried into review.</p>
+              </article>
+            </div>
+          </section>
+
+          <script id="approval-view-metadata" type="application/json">
+            {
+              &quot;approval_mode&quot;: &quot;Initial&quot;,
+              &quot;approval_view_generated_at&quot;: &quot;2026-04-16T20:50:28Z&quot;,
+              &quot;canonical_artifact&quot;: &quot;/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md&quot;,
+              &quot;canonical_updated_at&quot;: &quot;2026-04-15T12:54:58Z&quot;,
+              &quot;derived&quot;: {
+                &quot;glance&quot;: {
+                  &quot;Actors&quot;: &quot;3&quot;,
+                  &quot;Decision gates&quot;: &quot;3&quot;,
+                  &quot;Done checks&quot;: &quot;6&quot;,
+                  &quot;Evidence claims&quot;: &quot;5&quot;,
+                  &quot;Scope edges&quot;: &quot;2&quot;,
+                  &quot;Visuals&quot;: &quot;0&quot;
+                },
+                &quot;has_mermaid&quot;: false,
+                &quot;has_toc&quot;: true,
+                &quot;sections&quot;: [
+                  {
+                    &quot;emphasis&quot;: &quot;dominant&quot;,
+                    &quot;id&quot;: &quot;section-goals-and-non-goals&quot;,
+                    &quot;key&quot;: &quot;goals-and-non-goals&quot;,
+                    &quot;kind&quot;: &quot;paired-lists&quot;,
+                    &quot;title&quot;: &quot;Goals and Non-Goals&quot;,
+                    &quot;tone&quot;: &quot;accent&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-actors-and-personas&quot;,
+                    &quot;key&quot;: &quot;actors-and-personas&quot;,
+                    &quot;kind&quot;: &quot;roster&quot;,
+                    &quot;title&quot;: &quot;Actors and Personas in Scope&quot;,
+                    &quot;tone&quot;: &quot;info&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-success-criteria-that-define-done&quot;,
+                    &quot;key&quot;: &quot;success-criteria-that-define-done&quot;,
+                    &quot;kind&quot;: &quot;checklist&quot;,
+                    &quot;title&quot;: &quot;Success Criteria that Define Done&quot;,
+                    &quot;tone&quot;: &quot;success&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-decisions-required-for-approval&quot;,
+                    &quot;key&quot;: &quot;decisions-required-for-approval&quot;,
+                    &quot;kind&quot;: &quot;ledger&quot;,
+                    &quot;title&quot;: &quot;Decisions Required for Approval&quot;,
+                    &quot;tone&quot;: &quot;neutral&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-scope-risks-and-open-questions&quot;,
+                    &quot;key&quot;: &quot;scope-risks-and-open-questions&quot;,
+                    &quot;kind&quot;: &quot;callouts&quot;,
+                    &quot;title&quot;: &quot;Scope Risks and Open Questions&quot;,
+                    &quot;tone&quot;: &quot;warning&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-traceability-map&quot;,
+                    &quot;key&quot;: &quot;traceability-map&quot;,
+                    &quot;kind&quot;: &quot;traceability&quot;,
+                    &quot;title&quot;: &quot;Traceability Map&quot;,
+                    &quot;tone&quot;: &quot;info&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-validator-status&quot;,
+                    &quot;key&quot;: &quot;validator-status&quot;,
+                    &quot;kind&quot;: &quot;validator&quot;,
+                    &quot;title&quot;: &quot;Validator Status&quot;,
+                    &quot;tone&quot;: &quot;success&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;standard&quot;,
+                    &quot;id&quot;: &quot;section-downstream-impact-if-approved&quot;,
+                    &quot;key&quot;: &quot;downstream-impact-if-approved&quot;,
+                    &quot;kind&quot;: &quot;timeline&quot;,
+                    &quot;title&quot;: &quot;Downstream Impact if Approved&quot;,
+                    &quot;tone&quot;: &quot;info&quot;
+                  },
+                  {
+                    &quot;emphasis&quot;: &quot;recessed&quot;,
+                    &quot;id&quot;: &quot;section-snapshot-identity&quot;,
+                    &quot;key&quot;: &quot;snapshot-identity&quot;,
+                    &quot;kind&quot;: &quot;snapshot&quot;,
+                    &quot;title&quot;: &quot;Snapshot Identity&quot;,
+                    &quot;tone&quot;: &quot;neutral&quot;
+                  }
+                ]
+              },
+              &quot;profile_id&quot;: &quot;charter-approval-v2&quot;,
+              &quot;profile_source&quot;: &quot;/Users/urbanfaubion/.supacode/repos/agent-skills-spec-pack/lite/skills/charter/assets/approval-view-profile.json&quot;,
+              &quot;review_type&quot;: &quot;Artifact&quot;,
+              &quot;snapshot_sha256&quot;: &quot;630c23c14c9672362bfa448fbf7fbfb6e57e6fdbcf649d328720eabd1c3ff073&quot;
+            }
+          </script>
+
+          <div class="sections">
+            <section
+              class="approval-section approval-section--goals-and-non-goals"
+              id="section-goals-and-non-goals"
+              data-section-role="goals-and-non-goals"
+              data-section-kind="paired-lists"
+              data-section-style="hero"
+              data-section-tone="accent"
+              data-section-emphasis="dominant"
+              style="--section-index: 1"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">01</span>
+                    <span>Scope Edge</span>
+                  </div>
+                  <h2>Goals and Non-Goals</h2>
+                  <p class="section-why" data-section-why>
+                    Lead with intended outcomes and explicit exclusions in one scan.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="paired-grid" data-paired-lists="goals-and-non-goals">
+                  <article class="paired-panel">
+                    <h3>Goals</h3>
+                    <div class="paired-panel__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Provide a <code>gitai commit</code> CLI flow that turns staged Git
+                            changes into one proposed commit message for user review.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Allow one optional free-form instruction string to shape commit-message
+                            generation.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Keep the decision binary: approve creates the commit; reject aborts
+                            without one.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Support PATH-based CLI use from any working directory inside a Git
+                            repository.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="paired-panel">
+                    <h3>Non-Goals</h3>
+                    <div class="paired-panel__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            In-tool editing or iterative rewriting of the generated commit message.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Git staging workflows, unstaged-change review, or other Git subcommands.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Non-Git repositories or other version-control systems.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Additional review states beyond approve or reject.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--actors-and-personas"
+              id="section-actors-and-personas"
+              data-section-role="actors-and-personas"
+              data-section-kind="roster"
+              data-section-style="default"
+              data-section-tone="info"
+              data-section-emphasis="standard"
+              style="--section-index: 2"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">02</span>
+                    <span>Actors</span>
+                  </div>
+                  <h2>Actors and Personas in Scope</h2>
+                  <p class="section-why" data-section-why>
+                    Make the named people, roles, or systems shaping scope obvious.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="roster" data-roster="actors-and-personas">
+                  <article class="roster-entry">
+                    <h3>Developer</h3>
+                    <div class="roster-entry__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Role: Terminal user who wants faster commit authoring for already staged
+                            changes.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Relevance: Primary reviewer who approves or rejects the proposed commit
+                            message.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="roster-entry">
+                    <h3>Local Git repository</h3>
+                    <div class="roster-entry__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Role: Repository discovered from the current working directory.
+                          </div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Relevance: Supplies the only staged diff in scope and receives the
+                            eventual commit.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="roster-entry">
+                    <h3>LLM provider/model runtime</h3>
+                    <div class="roster-entry__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">Role: External generation dependency.</div>
+                        </li>
+                        <li>
+                          <div class="rich-list__text">
+                            Relevance: Produces the proposal or fails the flow before commit
+                            creation.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--success-criteria-that-define-done"
+              id="section-success-criteria-that-define-done"
+              data-section-role="success-criteria-that-define-done"
+              data-section-kind="checklist"
+              data-section-style="elevated"
+              data-section-tone="success"
+              data-section-emphasis="standard"
+              style="--section-index: 3"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">03</span>
+                    <span>Done Criteria</span>
+                  </div>
+                  <h2>Success Criteria that Define Done</h2>
+                  <p class="section-why" data-section-why>
+                    Frame approval as explicit done checks, not loose aspirations.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <ol class="checklist" data-checklist="success-criteria-that-define-done">
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">01</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            A developer inside a Git repository with staged changes can run
+                            <code>gitai commit</code> and receive exactly one generated
+                            commit-message proposal.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">02</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            One optional free-form instruction string can shape that proposal.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">03</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Approval creates the Git commit with the proposed message and rejection
+                            aborts without a commit.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">04</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Invalid repo context, missing staged changes, or generation failure
+                            writes an error to stderr and creates no commit.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">05</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            The installed CLI can be invoked from any directory on the user&#x27;s
+                            PATH while resolving repo state from the current working directory.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                  <li class="checklist-item">
+                    <div class="checklist-item__marker">06</div>
+                    <div class="checklist-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Default generation uses Codex with thinking level set to medium.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--decisions-required-for-approval"
+              id="section-decisions-required-for-approval"
+              data-section-role="decisions-required-for-approval"
+              data-section-kind="ledger"
+              data-section-style="default"
+              data-section-tone="neutral"
+              data-section-emphasis="standard"
+              style="--section-index: 4"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">04</span>
+                    <span>Decision Gate</span>
+                  </div>
+                  <h2>Decisions Required for Approval</h2>
+                  <p class="section-why" data-section-why>
+                    Keep approval calls dense and scan-fast.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="ledger" data-ledger="decisions-required-for-approval">
+                  <article class="ledger-row">
+                    <div class="ledger-row__index">01</div>
+                    <div class="ledger-row__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">Scope baseline</div>
+                          <ul class="rich-list rich-list--depth-1">
+                            <li>
+                              <div class="rich-list__text">
+                                Approve this charter as the scope baseline for the initial
+                                <code>gitai</code> slice: one staged-diff-driven commit flow only.
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="ledger-row">
+                    <div class="ledger-row__index">02</div>
+                    <div class="ledger-row__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">Review contract</div>
+                          <ul class="rich-list rich-list--depth-1">
+                            <li>
+                              <div class="rich-list__text">
+                                Approve binary review only: approve creates the commit and reject
+                                aborts without a commit.
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="ledger-row">
+                    <div class="ledger-row__index">03</div>
+                    <div class="ledger-row__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">Default generation policy</div>
+                          <ul class="rich-list rich-list--depth-1">
+                            <li>
+                              <div class="rich-list__text">
+                                Approve Codex with thinking level medium as the default generation
+                                behavior for this slice.
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--scope-risks-and-open-questions"
+              id="section-scope-risks-and-open-questions"
+              data-section-role="scope-risks-and-open-questions"
+              data-section-kind="callouts"
+              data-section-style="elevated"
+              data-section-tone="warning"
+              data-section-emphasis="standard"
+              style="--section-index: 5"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">05</span>
+                    <span>Open Issues</span>
+                  </div>
+                  <h2>Scope Risks and Open Questions</h2>
+                  <p class="section-why" data-section-why>
+                    Keep risky edges and unresolved framing visible.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="callout-stack" data-callout-stack="scope-risks-and-open-questions">
+                  <article class="callout callout--warning">
+                    <div class="callout__label">Risk 01</div>
+                    <div class="callout__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Provider failure is an accepted stop condition for the first release;
+                            the tool aborts instead of guessing or auto-retrying.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="callout callout--warning">
+                    <div class="callout__label">Risk 02</div>
+                    <div class="callout__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Excluding in-tool editing keeps the first slice tight, but any message
+                            refinement stays outside this CLI flow.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--traceability-map"
+              id="section-traceability-map"
+              data-section-role="traceability-map"
+              data-section-kind="traceability"
+              data-section-style="default"
+              data-section-tone="info"
+              data-section-emphasis="standard"
+              style="--section-index: 6"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">06</span>
+                    <span>Evidence</span>
+                  </div>
+                  <h2>Traceability Map</h2>
+                  <p class="section-why" data-section-why>
+                    Tie substantive approval claims to exact canonical evidence.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="traceability-list" data-traceability-list="traceability-map">
+                  <details class="traceability-item" data-traceability-item open>
+                    <summary>
+                      <span class="traceability-item__id">T1</span>
+                      <span class="traceability-item__claim"
+                        >The product scope is one CLI commit flow that turns staged Git changes into
+                        a proposed commit message.</span
+                      >
+                    </summary>
+                    <div class="traceability-item__body">
+                      <div class="traceability-meta">
+                        <span class="traceability-meta__label">Source</span>
+                        <code
+                          >/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md</code
+                        >
+                        <span class="traceability-meta__sep">::</span>
+                        <code>Goals</code>
+                      </div>
+                      <blockquote>
+                        - Provide a `gitai commit` CLI flow that turns currently staged Git changes
+                        into a proposed commit message for user review.
+                      </blockquote>
+                    </div>
+                  </details>
+                  <details class="traceability-item" data-traceability-item>
+                    <summary>
+                      <span class="traceability-item__id">T2</span>
+                      <span class="traceability-item__claim"
+                        >The user may supply one optional free-form instruction string to influence
+                        generation.</span
+                      >
+                    </summary>
+                    <div class="traceability-item__body">
+                      <div class="traceability-meta">
+                        <span class="traceability-meta__label">Source</span>
+                        <code
+                          >/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md</code
+                        >
+                        <span class="traceability-meta__sep">::</span>
+                        <code>Goals</code>
+                      </div>
+                      <blockquote>
+                        - Let the user optionally supply one free-form instruction string to shape
+                        commit-message generation.
+                      </blockquote>
+                    </div>
+                  </details>
+                  <details class="traceability-item" data-traceability-item>
+                    <summary>
+                      <span class="traceability-item__id">T3</span>
+                      <span class="traceability-item__claim"
+                        >The review outcome is intentionally binary: approve creates the commit and
+                        reject aborts it.</span
+                      >
+                    </summary>
+                    <div class="traceability-item__body">
+                      <div class="traceability-meta">
+                        <span class="traceability-meta__label">Source</span>
+                        <code
+                          >/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md</code
+                        >
+                        <span class="traceability-meta__sep">::</span>
+                        <code>Success Criteria</code>
+                      </div>
+                      <blockquote>
+                        - SC1.3: The flow allows only two terminal outcomes after generation:
+                        approve creates the Git commit with the proposed message, and reject aborts
+                        without creating a commit.
+                      </blockquote>
+                    </div>
+                  </details>
+                  <details class="traceability-item" data-traceability-item>
+                    <summary>
+                      <span class="traceability-item__id">T4</span>
+                      <span class="traceability-item__claim"
+                        >In-tool message editing is explicitly out of scope for the initial
+                        slice.</span
+                      >
+                    </summary>
+                    <div class="traceability-item__body">
+                      <div class="traceability-meta">
+                        <span class="traceability-meta__label">Source</span>
+                        <code
+                          >/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md</code
+                        >
+                        <span class="traceability-meta__sep">::</span>
+                        <code>Non-Goals</code>
+                      </div>
+                      <blockquote>
+                        - In-tool editing or iterative rewriting of the generated commit message.
+                      </blockquote>
+                    </div>
+                  </details>
+                  <details class="traceability-item" data-traceability-item>
+                    <summary>
+                      <span class="traceability-item__id">T5</span>
+                      <span class="traceability-item__claim"
+                        >Default generation behavior uses Codex with thinking level medium.</span
+                      >
+                    </summary>
+                    <div class="traceability-item__body">
+                      <div class="traceability-meta">
+                        <span class="traceability-meta__label">Source</span>
+                        <code
+                          >/Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md</code
+                        >
+                        <span class="traceability-meta__sep">::</span>
+                        <code>Success Criteria</code>
+                      </div>
+                      <blockquote>
+                        - SC1.6: Default commit-message generation uses Codex with thinking level
+                        set to medium when the user does not override behavior with extra
+                        instruction text.
+                      </blockquote>
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--validator-status"
+              id="section-validator-status"
+              data-section-role="validator-status"
+              data-section-kind="validator"
+              data-section-style="elevated"
+              data-section-tone="success"
+              data-section-emphasis="standard"
+              style="--section-index: 7"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">07</span>
+                    <span>Validation</span>
+                  </div>
+                  <h2>Validator Status</h2>
+                  <p class="section-why" data-section-why>
+                    Show canonical and approval-view validation status together.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="validator-grid" data-validator-grid="validator-status">
+                  <article class="validator-card validator-card--passed" data-validator-card>
+                    <div class="validator-card__top">
+                      <div class="validator-card__label">Canonical validator</div>
+                      <span class="status-pill status-pill--passed">Passed</span>
+                    </div>
+                    <details class="detail-panel" data-command-details>
+                      <summary>Validator command</summary>
+                      <pre
+                        class="code-block"
+                      ><code>bash .agents/skills/write-charter/scripts/validate_charter.sh .specs/gitai/charter.md</code></pre>
+                    </details>
+                  </article>
+                  <article class="validator-card validator-card--passed" data-validator-card>
+                    <div class="validator-card__top">
+                      <div class="validator-card__label">Approval-view validator</div>
+                      <span class="status-pill status-pill--passed">Passed</span>
+                    </div>
+                    <details class="detail-panel" data-command-details>
+                      <summary>Validator command</summary>
+                      <pre
+                        class="code-block"
+                      ><code>bash .agents/skills/write-approval-view/scripts/validate_approval_view.sh artifact .specs/gitai/charter.md .specs/gitai/approval/charter.md .specs/gitai/approval/charter.html</code></pre>
+                    </details>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--downstream-impact-if-approved"
+              id="section-downstream-impact-if-approved"
+              data-section-role="downstream-impact-if-approved"
+              data-section-kind="timeline"
+              data-section-style="default"
+              data-section-tone="info"
+              data-section-emphasis="standard"
+              style="--section-index: 8"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">08</span>
+                    <span>Impact</span>
+                  </div>
+                  <h2>Downstream Impact if Approved</h2>
+                  <p class="section-why" data-section-why>
+                    Clarify what downstream work may now treat as fixed.
+                  </p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="impact-timeline" data-timeline="downstream-impact-if-approved">
+                  <article class="timeline-item">
+                    <div class="timeline-item__marker">01</div>
+                    <div class="timeline-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            User stories can treat the staged-diff flow, binary review, and
+                            PATH-scoped invocation as fixed product scope.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="timeline-item">
+                    <div class="timeline-item__marker">02</div>
+                    <div class="timeline-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Requirements can freeze Codex-medium default generation and fail-closed
+                            error behavior without reopening charter scope.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                  <article class="timeline-item">
+                    <div class="timeline-item__marker">03</div>
+                    <div class="timeline-item__body">
+                      <ul class="rich-list rich-list--depth-0">
+                        <li>
+                          <div class="rich-list__text">
+                            Technical design can assume commit-message editing, broader Git
+                            workflows, and extra review states remain out of scope.
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </section>
+            <section
+              class="approval-section approval-section--snapshot-identity"
+              id="section-snapshot-identity"
+              data-section-role="snapshot-identity"
+              data-section-kind="snapshot"
+              data-section-style="recessed"
+              data-section-tone="neutral"
+              data-section-emphasis="recessed"
+              style="--section-index: 9"
+            >
+              <div class="section-top">
+                <div class="section-heading">
+                  <div class="section-kicker">
+                    <span class="section-number">09</span>
+                    <span>Snapshot</span>
+                  </div>
+                  <h2>Snapshot Identity</h2>
+                  <p class="section-why" data-section-why>End with exact snapshot identity.</p>
+                </div>
+              </div>
+              <div class="section-content">
+                <div class="snapshot-panel" data-snapshot-panel="snapshot-identity">
+                  <dl class="snapshot-grid">
+                    <div class="snapshot-grid__row">
+                      <dt>Review type</dt>
+                      <dd class="snapshot-grid__value">Artifact</dd>
+                    </div>
+                    <div class="snapshot-grid__row">
+                      <dt>Approval mode</dt>
+                      <dd class="snapshot-grid__value">Initial</dd>
+                    </div>
+                    <div class="snapshot-grid__row">
+                      <dt>Canonical artifact</dt>
+                      <dd class="snapshot-grid__value snapshot-grid__value--mono">
+                        /Users/urbanfaubion/.supacode/repos/gitai/init-authoring/.specs/gitai/charter.md
+                      </dd>
+                    </div>
+                    <div class="snapshot-grid__row">
+                      <dt>Snapshot SHA-256</dt>
+                      <dd class="snapshot-grid__value snapshot-grid__value--mono">
+                        630c23c14c9672362bfa448fbf7fbfb6e57e6fdbcf649d328720eabd1c3ff073
+                      </dd>
+                    </div>
+                    <div class="snapshot-grid__row">
+                      <dt>Canonical updated_at</dt>
+                      <dd class="snapshot-grid__value snapshot-grid__value--mono">
+                        2026-04-15T12:54:58Z
+                      </dd>
+                    </div>
+                    <div class="snapshot-grid__row">
+                      <dt>Approval view generated_at</dt>
+                      <dd class="snapshot-grid__value snapshot-grid__value--mono">
+                        2026-04-16T20:50:28Z
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+      mermaid.initialize({ startOnLoad: false, securityLevel: "loose", theme: "base" });
+
+      const tocLinks = Array.from(document.querySelectorAll("[data-toc-link]"));
+      const sectionIds = [
+        ...new Set(tocLinks.map((link) => link.getAttribute("href")).filter(Boolean)),
+      ];
+      const sections = sectionIds.map((id) => document.querySelector(id)).filter(Boolean);
+
+      if (sections.length === 0) {
+        document.getElementById("approval-toc")?.setAttribute("hidden", "hidden");
+        document.querySelector(".mobile-nav")?.setAttribute("hidden", "hidden");
+      }
+
+      const setActive = (id) => {
+        tocLinks.forEach((link) => {
+          const active = link.getAttribute("href") === `#${id}`;
+          link.classList.toggle("active", active);
+        });
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          if (visible[0]?.target?.id) {
+            setActive(visible[0].target.id);
+          }
+        },
+        { rootMargin: "-25% 0px -55% 0px", threshold: [0.15, 0.35, 0.6] },
+      );
+
+      sections.forEach((section) => observer.observe(section));
+      if (sections[0]?.id) setActive(sections[0].id);
+
+      const renderMermaidShell = async (shell, index) => {
+        const sourceNode = shell.querySelector("[data-mermaid-source]");
+        const canvas = shell.querySelector("[data-mermaid-canvas]");
+        const viewport = shell.querySelector("[data-mermaid-viewport]");
+        if (!sourceNode || !canvas || !viewport) return;
+
+        const source = sourceNode.textContent || "";
+        const id = `approval-mermaid-render-${index}`;
+        try {
+          const { svg } = await mermaid.render(id, source);
+          canvas.innerHTML = svg;
+        } catch (error) {
+          canvas.innerHTML = `<pre class="code-block">${source.replace(/[&<>]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[char])}</pre>`;
+        }
+
+        const state = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0 };
+        const applyTransform = () => {
+          canvas.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        };
+        const fit = () => {
+          state.scale = 1;
+          state.x = 0;
+          state.y = 0;
+          applyTransform();
+        };
+        fit();
+
+        viewport.addEventListener("pointerdown", (event) => {
+          state.dragging = true;
+          state.startX = event.clientX - state.x;
+          state.startY = event.clientY - state.y;
+          viewport.classList.add("is-dragging");
+        });
+        window.addEventListener("pointerup", () => {
+          state.dragging = false;
+          viewport.classList.remove("is-dragging");
+        });
+        viewport.addEventListener("pointermove", (event) => {
+          if (!state.dragging) return;
+          state.x = event.clientX - state.startX;
+          state.y = event.clientY - state.startY;
+          applyTransform();
+        });
+
+        shell.querySelectorAll("[data-zoom-action]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const action = button.getAttribute("data-zoom-action");
+            if (action === "in") state.scale = Math.min(3, state.scale + 0.15);
+            if (action === "out") state.scale = Math.max(0.4, state.scale - 0.15);
+            if (action === "reset" || action === "fit") fit();
+            if (action === "expand") {
+              if (shell.requestFullscreen) shell.requestFullscreen();
+            }
+            applyTransform();
+          });
+        });
+      };
+
+      Array.from(document.querySelectorAll("[data-mermaid-shell]")).forEach((shell, index) => {
+        renderMermaidShell(shell, index + 1);
+      });
+    </script>
+  </body>
+</html>
