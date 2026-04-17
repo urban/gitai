@@ -2,4 +2,4 @@
 "@urban/gitai": patch
 ---
 
-Add a Ralph checklist sourced from the current execution tasks and linked to the execution plan.
+Add Ralph task tracking files and boot the Bun-backed `gitai commit` CLI with the approved zero-or-one instruction grammar plus end-to-end parse tests.

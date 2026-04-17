@@ -9,7 +9,7 @@ Execution rule: complete tasks in order. Do not start the next task until the cu
 
 ## Stream 1: CLI foundation and runtime composition
 
-- [ ] CLI-01 — Boot the `gitai commit` command under Bun with the approved grammar
+- [x] CLI-01 — Boot the `gitai commit` command under Bun with the approved grammar
 - [ ] CLI-02 — Define shared command contracts, config, and stderr-facing operational errors
 
 ## Stream 2: Git repository snapshot and commit boundary
