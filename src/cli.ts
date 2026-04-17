@@ -5,6 +5,7 @@ import { Effect, Layer } from "effect";
 import * as Command from "effect/unstable/cli/Command";
 import packageJson from "../package.json" with { type: "json" };
 
+import { stderrRender, writeCliRender } from "./CliLogger.ts";
 import { makeCommitCommand, validateCommitCommandGrammar } from "./commands/commit.ts";
 import { CommitWorkflow } from "./services/CommitWorkflow.ts";
 
@@ -16,17 +17,25 @@ export const makeCli = (cwd: string) =>
 
 export const MainLayer = CommitWorkflow.liveLayer.pipe(Layer.provideMerge(BunServices.layer));
 
-export const makeMain = (cwd: string) =>
-  makeCli(cwd).pipe(Command.run({ version: packageJson.version }), Effect.provide(MainLayer));
-
-if (import.meta.main) {
-  const args = process.argv.slice(2);
+export const makeMain = (
+  cwd: string,
+  args: ReadonlyArray<string>,
+): Effect.Effect<void, unknown> => {
   const grammarError = validateCommitCommandGrammar(args);
 
   if (grammarError !== undefined) {
-    console.error(`ERROR\n  ${grammarError}`);
-    process.exit(1);
+    return writeCliRender(stderrRender(`ERROR\n  ${grammarError}`)).pipe(
+      Effect.andThen(Effect.fail(grammarError)),
+    );
   }
 
-  BunRuntime.runMain(makeMain(process.cwd()));
+  return Command.runWith(makeCli(cwd), { version: packageJson.version })(args).pipe(
+    Effect.provide(MainLayer),
+  );
+};
+
+if (import.meta.main) {
+  BunRuntime.runMain(makeMain(process.cwd(), process.argv.slice(2)), {
+    disableErrorReporting: true,
+  });
 }

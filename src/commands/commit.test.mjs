@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
+import { BunServices } from "@effect/platform-bun";
 import * as Console from "effect/Console";
 import { Effect, Layer } from "effect";
 import * as TestConsole from "effect/testing/TestConsole";
@@ -90,6 +91,7 @@ const runCommand = ({ cwd, input, generatorLayer, reviewLayer }) =>
       Effect.provide(generatorLayer),
       Effect.provide(reviewLayer),
       Effect.provide(GitRepository.layer),
+      Effect.provide(BunServices.layer),
     ),
   );
 

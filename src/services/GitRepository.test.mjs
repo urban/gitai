@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
+import { BunServices } from "@effect/platform-bun";
 import { Effect } from "effect";
 
 import { GitRepository } from "./GitRepository.ts";
@@ -35,7 +36,7 @@ const loadSnapshot = (cwd) =>
       const repository = yield* GitRepository;
 
       return yield* repository.loadSnapshot(cwd);
-    }).pipe(Effect.provide(GitRepository.layer)),
+    }).pipe(Effect.provide(GitRepository.layer), Effect.provide(BunServices.layer)),
   );
 
 const commitApproved = (snapshot, commitMessage) =>
@@ -44,7 +45,7 @@ const commitApproved = (snapshot, commitMessage) =>
       const repository = yield* GitRepository;
 
       return yield* repository.commitApproved(snapshot, commitMessage);
-    }).pipe(Effect.provide(GitRepository.layer)),
+    }).pipe(Effect.provide(GitRepository.layer), Effect.provide(BunServices.layer)),
   );
 
 const createRepository = (t) => {
