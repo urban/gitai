@@ -15,7 +15,7 @@ Execution rule: complete tasks in order. Do not start the next task until the cu
 ## Stream 2: Git repository snapshot and commit boundary
 
 - [x] GIT-01 — Load a staged snapshot from the current working directory
-- [ ] GIT-02 — Commit the exact approved message with fingerprint revalidation
+- [x] GIT-02 — Commit the exact approved message with fingerprint revalidation
 
 ## Stream 3: Proposal generation and provider boundary
 

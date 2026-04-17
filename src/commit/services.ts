@@ -1,4 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Context, Effect, Layer } from "effect";
 
 import type { CommitProposal, StagedSnapshot } from "./contracts.ts";
@@ -13,6 +16,7 @@ import {
   NoStagedChangesError as NoStagedChangesErrorClass,
   NotGitRepositoryError as NotGitRepositoryErrorClass,
   GitCommandError as GitCommandErrorClass,
+  IndexChangedDuringReviewError as IndexChangedDuringReviewErrorClass,
 } from "./errors.ts";
 
 type GitCommand = readonly [string, ...Array<string>];
@@ -64,6 +68,39 @@ const revParseShowToplevelCommand = (): GitCommand => ["rev-parse", "--show-topl
 const diffCachedBinaryCommand = (): GitCommand => ["diff", "--cached", "--no-ext-diff", "--binary"];
 
 const writeTreeCommand = (): GitCommand => ["write-tree"];
+
+const commitWithFileCommand = (messageFilePath: string): GitCommand => [
+  "commit",
+  "--cleanup=verbatim",
+  "--file",
+  messageFilePath,
+];
+
+const commitWithTempFilePlaceholderCommand = (): GitCommand => [
+  "commit",
+  "--cleanup=verbatim",
+  "--file",
+  "<temp-message-file>",
+];
+
+const tempMessageDirectoryPrefix = join(tmpdir(), "gitai-commit-message-");
+
+const tempMessageFileName = "COMMIT_EDITMSG";
+
+const cleanupTempDirectory = (tempDirectory: string) =>
+  Effect.sync(() => {
+    try {
+      rmSync(tempDirectory, { recursive: true, force: true });
+    } catch {
+      return;
+    }
+  });
+
+const toCommitMessageFileError = (message: string): GitCommandError =>
+  new GitCommandErrorClass({
+    command: gitCommand(commitWithTempFilePlaceholderCommand()),
+    message,
+  });
 
 const resolveRepoRoot = Effect.fn("GitRepository.resolveRepoRoot")(function* (
   cwd: string,
@@ -119,6 +156,59 @@ const loadSnapshot = Effect.fn("GitRepository.loadSnapshot")(function* (
   };
 });
 
+const loadCurrentFingerprint = Effect.fn("GitRepository.loadCurrentFingerprint")(function* (
+  repoRoot: string,
+): Effect.fn.Return<string, GitCommandError> {
+  const args = writeTreeCommand();
+  const result = yield* spawnGit(repoRoot, args);
+
+  if (result.error !== undefined || result.status !== 0) {
+    return yield* toGitCommandError(args, result);
+  }
+
+  return trimTrailingNewlines(result.stdout);
+});
+
+const commitApproved = Effect.fn("GitRepository.commitApproved")(function* (
+  snapshot: StagedSnapshot,
+  commitMessage: string,
+): Effect.fn.Return<void, IndexChangedDuringReviewError | GitCommandError> {
+  const currentFingerprint = yield* loadCurrentFingerprint(snapshot.repoRoot);
+
+  if (currentFingerprint !== snapshot.indexFingerprint) {
+    return yield* new IndexChangedDuringReviewErrorClass({ repoRoot: snapshot.repoRoot });
+  }
+
+  const tempDirectory = yield* Effect.try({
+    try: () => mkdtempSync(tempMessageDirectoryPrefix),
+    catch: (cause) =>
+      toCommitMessageFileError(
+        cause instanceof Error ? cause.message : "Failed to create a temporary commit message file",
+      ),
+  });
+
+  const messageFilePath = join(tempDirectory, tempMessageFileName);
+
+  return yield* Effect.gen(function* (): Effect.fn.Return<void, GitCommandError> {
+    yield* Effect.try({
+      try: () => writeFileSync(messageFilePath, commitMessage, { encoding: "utf8" }),
+      catch: (cause) =>
+        toCommitMessageFileError(
+          cause instanceof Error
+            ? cause.message
+            : "Failed to write the temporary commit message file",
+        ),
+    });
+
+    const commitArgs = commitWithFileCommand(messageFilePath);
+    const commitResult = yield* spawnGit(snapshot.repoRoot, commitArgs);
+
+    if (commitResult.error !== undefined || commitResult.status !== 0) {
+      return yield* toGitCommandError(commitArgs, commitResult);
+    }
+  }).pipe(Effect.ensuring(cleanupTempDirectory(tempDirectory)));
+});
+
 export class GitRepository extends Context.Service<
   GitRepository,
   {
@@ -138,15 +228,7 @@ export class GitRepository extends Context.Service<
     GitRepository,
     GitRepository.of({
       loadSnapshot,
-      commitApproved: Effect.fn("GitRepository.commitApproved")(function* (
-        _snapshot: StagedSnapshot,
-        _commitMessage: string,
-      ): Effect.fn.Return<void, IndexChangedDuringReviewError | GitCommandError> {
-        return yield* new GitCommandErrorClass({
-          command: gitCommand(["commit", "--file", "<temp-message-file>"]),
-          message: "GitRepository.commitApproved is not implemented yet",
-        });
-      }),
+      commitApproved,
     }),
   );
 }

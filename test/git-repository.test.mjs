@@ -38,6 +38,15 @@ const loadSnapshot = (cwd) =>
     }).pipe(Effect.provide(GitRepository.layer)),
   );
 
+const commitApproved = (snapshot, commitMessage) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const repository = yield* GitRepository;
+
+      return yield* repository.commitApproved(snapshot, commitMessage);
+    }).pipe(Effect.provide(GitRepository.layer)),
+  );
+
 const createRepository = (t) => {
   const repoRoot = createTempDirectory();
 
@@ -96,6 +105,49 @@ test("loadSnapshot fails with NoStagedChangesError when no staged diff exists", 
     () => loadSnapshot(repoRoot),
     (error) => {
       assert.equal(error._tag, "NoStagedChangesError");
+      assert.equal(error.repoRoot, repoRoot);
+      return true;
+    },
+  );
+
+  assert.equal(runGit(repoRoot, "rev-list", "--count", "--all").trim(), "0");
+});
+
+test("commitApproved creates one commit whose stored message matches the reviewed multiline message", async (t) => {
+  const repoRoot = createRepository(t);
+
+  writeFileSync(resolve(repoRoot, "README.md"), "# gitai\n");
+  runGit(repoRoot, "add", "README.md");
+
+  const snapshot = await loadSnapshot(repoRoot);
+  const commitMessage = [
+    "feat: add README",
+    "",
+    "Document the initial repository scaffold.",
+    "Keep the staged snapshot review text verbatim.",
+  ].join("\n");
+
+  await commitApproved(snapshot, commitMessage);
+
+  assert.equal(runGit(repoRoot, "rev-list", "--count", "--all").trim(), "1");
+  assert.equal(runGit(repoRoot, "log", "-1", "--pretty=%B").replace(/\n$/u, ""), commitMessage);
+});
+
+test("commitApproved aborts before commit creation when the staged fingerprint changes during review", async (t) => {
+  const repoRoot = createRepository(t);
+
+  writeFileSync(resolve(repoRoot, "README.md"), "# gitai\n");
+  runGit(repoRoot, "add", "README.md");
+
+  const snapshot = await loadSnapshot(repoRoot);
+
+  writeFileSync(resolve(repoRoot, "README.md"), "# gitai\n\nupdated during review\n");
+  runGit(repoRoot, "add", "README.md");
+
+  await assert.rejects(
+    () => commitApproved(snapshot, "feat: add README"),
+    (error) => {
+      assert.equal(error._tag, "IndexChangedDuringReviewError");
       assert.equal(error.repoRoot, repoRoot);
       return true;
     },
