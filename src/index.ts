@@ -1,17 +1,28 @@
 #!/usr/bin/env bun
 
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import * as Argument from "effect/unstable/cli/Argument";
 import * as Command from "effect/unstable/cli/Command";
 import packageJson from "../package.json" with { type: "json" };
+import { decodeCommitInvocationInput } from "./commit/contracts.ts";
+
+const runCommitCommand = Effect.fn("runCommitCommand")(function* (input: {
+  readonly instruction?: string;
+}) {
+  yield* Effect.sync(() => decodeCommitInvocationInput(input));
+});
 
 const commit = Command.make(
   "commit",
   {
     instruction: Argument.string("instruction").pipe(Argument.optional),
   },
-  () => Effect.void,
+  ({ instruction }) => {
+    const value = Option.getOrUndefined(instruction);
+
+    return value === undefined ? runCommitCommand({}) : runCommitCommand({ instruction: value });
+  },
 ).pipe(Command.withDescription("Generate a commit proposal from the staged diff"));
 
 export const cli = Command.make("gitai").pipe(
