@@ -26,3 +26,4 @@ Execution rule: complete tasks in order. Do not start the next task until the cu
 
 - [x] FLOW-01 — Compose the approve-or-reject workflow across CLI, Git, and generator boundaries
 - [x] REL-01 — Close verification, changeset, and repo-root validation for the first release slice
+- [x] REL-02 — Reconcile branch release hygiene to one changeset for the pull request
