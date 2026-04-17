@@ -1,6 +1,7 @@
-import { Schema } from "effect";
+import * as Console from "effect/Console";
+import { Effect, Schema } from "effect";
 
-import type { CommitOutcome } from "./contracts.ts";
+import { type CommitOutcome, type CommitProposal, renderCommitMessage } from "./contracts.ts";
 import { formatCommitOperationalError, type CommitOperationalError } from "./errors.ts";
 
 export const TerminalStream = Schema.Literals(["stdout", "stderr"]);
@@ -13,6 +14,11 @@ export const TerminalRender = Schema.Struct({
 });
 
 export type TerminalRender = typeof TerminalRender.Type;
+
+export const renderCommitProposal = (proposal: CommitProposal): TerminalRender => ({
+  stream: "stdout",
+  text: `Proposed commit message:\n\n${renderCommitMessage(proposal)}`,
+});
 
 export const renderCommitOutcome = (outcome: CommitOutcome): TerminalRender => {
   switch (outcome._tag) {
@@ -32,4 +38,15 @@ export const renderCommitOutcome = (outcome: CommitOutcome): TerminalRender => {
 export const renderCommitOperationalError = (error: CommitOperationalError): TerminalRender => ({
   stream: "stderr",
   text: `ERROR\n  ${formatCommitOperationalError(error)}`,
+});
+
+export const writeTerminalRender = Effect.fn("writeTerminalRender")(function* (
+  render: TerminalRender,
+) {
+  if (render.stream === "stdout") {
+    yield* Console.log(render.text);
+    return;
+  }
+
+  yield* Console.error(render.text);
 });

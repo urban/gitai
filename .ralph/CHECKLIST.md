@@ -24,5 +24,5 @@ Execution rule: complete tasks in order. Do not start the next task until the cu
 
 ## Stream 4: Workflow integration, verification, and release hygiene
 
-- [ ] FLOW-01 — Compose the approve-or-reject workflow across CLI, Git, and generator boundaries
+- [x] FLOW-01 — Compose the approve-or-reject workflow across CLI, Git, and generator boundaries
 - [ ] REL-01 — Close verification, changeset, and repo-root validation for the first release slice
