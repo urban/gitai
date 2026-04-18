@@ -4,11 +4,11 @@ import {
   type CommitInvocationInput,
   type CommitOutcome,
   renderCommitMessage,
-} from "../domain/Commit.ts";
-import type { CommitOperationalError } from "../errors/CommitError.ts";
-import { CommitMessageGenerator } from "./CommitMessageGenerator.ts";
-import { CommitReview } from "./CommitReview.ts";
-import { GitRepository } from "./GitRepository.ts";
+} from "../domain/Commit";
+import type { CommitOperationalError } from "../errors/CommitError";
+import { CommitMessageGenerator } from "./CommitMessageGenerator";
+import { CommitReview } from "./CommitReview";
+import { GitRepository } from "./GitRepository";
 
 export class CommitWorkflow extends Context.Service<
   CommitWorkflow,

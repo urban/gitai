@@ -3,9 +3,9 @@ import { Config as EffectConfig, Context, Effect, Layer } from "effect";
 import { AiError, LanguageModel } from "effect/unstable/ai";
 import { FetchHttpClient } from "effect/unstable/http";
 
-import { CommitProposal, GitAiConfigReference, type StagedSnapshot } from "../domain/Commit.ts";
-import type { CommitMessageGeneratorError } from "../errors/CommitError.ts";
-import { CommitMessageGeneratorError as CommitMessageGeneratorErrorClass } from "../errors/CommitError.ts";
+import { CommitProposal, GitAiConfigReference, type StagedSnapshot } from "../domain/Commit";
+import type { CommitMessageGeneratorError } from "../errors/CommitError";
+import { CommitMessageGeneratorError as CommitMessageGeneratorErrorClass } from "../errors/CommitError";
 
 const commitProposalPromptHeader = [
   "You write Git commit proposals from staged diffs.",

@@ -5,9 +5,9 @@ import * as Path from "effect/Path";
 import * as Terminal from "effect/Terminal";
 import * as Prompt from "effect/unstable/cli/Prompt";
 
-import { writeCliRender } from "../CliLogger.ts";
-import { type CommitProposal, type ReviewDecision } from "../domain/Commit.ts";
-import { renderCommitProposal } from "../commands/commit/render.ts";
+import { writeCliRender } from "../CliLogger";
+import { type CommitProposal, type ReviewDecision } from "../domain/Commit";
+import { renderCommitProposal } from "../commands/commit/render";
 
 const toReviewDecision = (approved: boolean): ReviewDecision =>
   approved ? { _tag: "Approve" } : { _tag: "Reject" };

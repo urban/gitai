@@ -5,9 +5,9 @@ import { Effect, Layer } from "effect";
 import * as Command from "effect/unstable/cli/Command";
 import packageJson from "../package.json" with { type: "json" };
 
-import { stderrRender, writeCliRender } from "./CliLogger.ts";
-import { makeCommitCommand, validateCommitCommandGrammar } from "./commands/commit.ts";
-import { CommitWorkflow } from "./services/CommitWorkflow.ts";
+import { stderrRender, writeCliRender } from "./CliLogger";
+import { makeCommitCommand, validateCommitCommandGrammar } from "./commands/commit";
+import { CommitWorkflow } from "./services/CommitWorkflow";
 
 export const makeCli = (cwd: string) =>
   Command.make("gitai").pipe(

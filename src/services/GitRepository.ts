@@ -3,19 +3,19 @@ import * as PlatformError from "effect/PlatformError";
 import { Context, Effect, Layer, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { type StagedSnapshot } from "../domain/Commit.ts";
+import { type StagedSnapshot } from "../domain/Commit";
 import type {
   GitCommandError,
   IndexChangedDuringReviewError,
   NoStagedChangesError,
   NotGitRepositoryError,
-} from "../errors/CommitError.ts";
+} from "../errors/CommitError";
 import {
   GitCommandError as GitCommandErrorClass,
   IndexChangedDuringReviewError as IndexChangedDuringReviewErrorClass,
   NoStagedChangesError as NoStagedChangesErrorClass,
   NotGitRepositoryError as NotGitRepositoryErrorClass,
-} from "../errors/CommitError.ts";
+} from "../errors/CommitError";
 
 type GitCommand = readonly [string, ...Array<string>];
 

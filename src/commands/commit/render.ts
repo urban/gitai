@@ -1,13 +1,9 @@
-import { stderrRender, stdoutRender, type CliRender } from "../../CliLogger.ts";
-import {
-  type CommitOutcome,
-  type CommitProposal,
-  renderCommitMessage,
-} from "../../domain/Commit.ts";
+import { stderrRender, stdoutRender, type CliRender } from "../../CliLogger";
+import { type CommitOutcome, type CommitProposal, renderCommitMessage } from "../../domain/Commit";
 import {
   formatCommitOperationalError,
   type CommitOperationalError,
-} from "../../errors/CommitError.ts";
+} from "../../errors/CommitError";
 
 export const renderCommitProposal = (proposal: CommitProposal): CliRender =>
   stdoutRender(`Proposed commit message:\n\n${renderCommitMessage(proposal)}`);

@@ -2,10 +2,10 @@ import { Effect, Option } from "effect";
 import * as Argument from "effect/unstable/cli/Argument";
 import * as Command from "effect/unstable/cli/Command";
 
-import { writeCliRender } from "../CliLogger.ts";
-import { decodeCommitInvocationInput } from "../domain/Commit.ts";
-import { renderCommitOperationalError, renderCommitOutcome } from "./commit/render.ts";
-import { CommitWorkflow } from "../services/CommitWorkflow.ts";
+import { writeCliRender } from "../CliLogger";
+import { decodeCommitInvocationInput } from "../domain/Commit";
+import { renderCommitOperationalError, renderCommitOutcome } from "./commit/render";
+import { CommitWorkflow } from "../services/CommitWorkflow";
 
 export const runCommitCommand = Effect.fn("runCommitCommand")(function* (
   cwd: string,
