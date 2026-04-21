@@ -15,14 +15,15 @@ export const runCommitCommand = Effect.fn("runCommitCommand")(function* (
 ) {
   const workflow = yield* CommitWorkflow;
   const invocationInput = yield* Effect.sync(() => decodeCommitInvocationInput(input));
-  const rendered = yield* workflow.run(cwd, invocationInput).pipe(
-    Effect.match({
-      onFailure: renderCommitOperationalError,
-      onSuccess: renderCommitOutcome,
+  yield* workflow.run(cwd, invocationInput).pipe(
+    Effect.matchEffect({
+      onFailure: (error) =>
+        writeCliRender(renderCommitOperationalError(error)).pipe(
+          Effect.andThen(Effect.fail(error)),
+        ),
+      onSuccess: (outcome) => writeCliRender(renderCommitOutcome(outcome)),
     }),
   );
-
-  yield* writeCliRender(rendered);
 });
 
 export const makeCommitCommand = (cwd: string) =>

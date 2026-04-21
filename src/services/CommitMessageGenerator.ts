@@ -26,7 +26,16 @@ const buildCommitProposalPrompt = (
   return sections.join("\n\n");
 };
 
-const toCommitMessageGeneratorError = (error: AiError.AiError): CommitMessageGeneratorError => {
+const toCommitMessageGeneratorError = (
+  error: AiError.AiError | EffectConfig.ConfigError,
+): CommitMessageGeneratorError => {
+  if (error._tag === "ConfigError") {
+    return new CommitMessageGeneratorErrorClass({
+      reason: "provider",
+      message: error.message,
+    });
+  }
+
   switch (error.reason._tag) {
     case "StructuredOutputError":
     case "InvalidOutputError":
@@ -67,6 +76,16 @@ const openAiLanguageModelLayer = Layer.unwrap(
   }),
 );
 
+const commitMessageGeneratorProviderLayer = openAiLanguageModelLayer.pipe(
+  Layer.provide(openAiClientLayer),
+);
+
+const CommitMessageGeneratorProviderLayerReference = Context.Reference<
+  Layer.Layer<LanguageModel.LanguageModel, EffectConfig.ConfigError>
+>("@urban/gitai/services/CommitMessageGenerator/ProviderLayer", {
+  defaultValue: () => commitMessageGeneratorProviderLayer,
+});
+
 export class CommitMessageGenerator extends Context.Service<
   CommitMessageGenerator,
   {
@@ -78,36 +97,32 @@ export class CommitMessageGenerator extends Context.Service<
 >()("@urban/gitai/services/CommitMessageGenerator") {
   static readonly languageModelLayer = openAiLanguageModelLayer;
 
-  static readonly providerLayer = CommitMessageGenerator.languageModelLayer.pipe(
-    Layer.provide(openAiClientLayer),
-  );
+  static readonly providerLayer = commitMessageGeneratorProviderLayer;
 
-  static readonly layer = Layer.effect(
+  static readonly providerLayerReference = CommitMessageGeneratorProviderLayerReference;
+
+  static readonly layer = Layer.succeed(
     CommitMessageGenerator,
-    Effect.gen(function* () {
-      const model = yield* LanguageModel.LanguageModel;
-      const generate = Effect.fn("CommitMessageGenerator.generate")(function* (
+    CommitMessageGenerator.of({
+      generate: Effect.fn("CommitMessageGenerator.generate")(function* (
         snapshot: StagedSnapshot,
         instruction: string | undefined,
       ): Effect.fn.Return<CommitProposal, CommitMessageGeneratorError> {
-        const response = yield* model
-          .generateObject({
+        const providerLayer = yield* CommitMessageGenerator.providerLayerReference;
+        const response = yield* Effect.gen(function* () {
+          const model = yield* LanguageModel.LanguageModel;
+
+          return yield* model.generateObject({
             objectName: "commit_proposal",
             prompt: buildCommitProposalPrompt(snapshot, instruction),
             schema: CommitProposal,
-          })
-          .pipe(Effect.mapError(toCommitMessageGeneratorError));
+          });
+        }).pipe(Effect.provide(providerLayer), Effect.mapError(toCommitMessageGeneratorError));
 
         return response.value;
-      });
-
-      return CommitMessageGenerator.of({
-        generate,
-      });
+      }),
     }),
   );
 
-  static readonly liveLayer = CommitMessageGenerator.layer.pipe(
-    Layer.provide(CommitMessageGenerator.providerLayer),
-  );
+  static readonly liveLayer = CommitMessageGenerator.layer;
 }

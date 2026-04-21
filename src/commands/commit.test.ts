@@ -54,10 +54,11 @@ const runCommand = (options: {
   readonly reviewLayer: ReturnType<typeof createReviewLayer>;
 }) =>
   Effect.gen(function* () {
-    yield* runCommitCommand(options.cwd, options.input);
+    const exit = yield* Effect.exit(runCommitCommand(options.cwd, options.input));
 
     return {
       errors: yield* TestConsole.errorLines,
+      exit,
       logs: yield* TestConsole.logLines,
     };
   }).pipe(
@@ -111,6 +112,7 @@ describe("commit command", () => {
           reviewLayer: createRenderedReviewLayer(() => Effect.succeed(approveDecision)),
         });
 
+        assert.strictEqual(result.exit._tag, "Success");
         assert.strictEqual((yield* runGit(repoRoot, "rev-list", "--count", "--all")).trim(), "1");
         assert.strictEqual(
           (yield* runGit(repoRoot, "log", "-1", "--pretty=%B")).replace(/\n$/u, ""),
@@ -142,6 +144,7 @@ describe("commit command", () => {
         reviewLayer: createRenderedReviewLayer(() => Effect.succeed(rejectDecision)),
       });
 
+      assert.strictEqual(result.exit._tag, "Success");
       assert.strictEqual((yield* runGit(repoRoot, "rev-list", "--count", "--all")).trim(), "0");
       assert.deepStrictEqual(result.errors, []);
       assert.deepStrictEqual(result.logs, [
@@ -199,6 +202,7 @@ describe("commit command", () => {
             reviewLayer: createRenderedReviewLayer(() => Effect.succeed(approveDecision)),
           });
 
+          assert.strictEqual(result.exit._tag, "Failure");
           assert.deepStrictEqual(result.logs, []);
           assert.isTrue(result.errors.length >= 1);
 
@@ -250,6 +254,7 @@ describe("commit command", () => {
           ),
         });
 
+        assert.strictEqual(result.exit._tag, "Failure");
         assert.strictEqual((yield* runGit(repoRoot, "rev-list", "--count", "--all")).trim(), "0");
         assert.deepStrictEqual(result.logs, ["Proposed commit message:\n\ndocs: add README"]);
         assert.deepStrictEqual(result.errors, [

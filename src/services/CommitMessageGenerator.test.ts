@@ -20,15 +20,18 @@ const stagedSnapshot = {
   indexFingerprint: "fingerprint-123",
 } satisfies StagedSnapshot;
 
-const runGenerateWithLayer = (options: {
+const runGenerateWithProviderLayer = (options: {
   readonly instruction: string | undefined;
-  readonly layer: Layer.Layer<CommitMessageGenerator, never, never>;
+  readonly providerLayer: typeof CommitMessageGenerator.providerLayer;
 }) =>
   Effect.gen(function* () {
     const generator = yield* CommitMessageGenerator;
 
     return yield* generator.generate(stagedSnapshot, options.instruction);
-  }).pipe(Effect.provide(options.layer));
+  }).pipe(
+    Effect.provideService(CommitMessageGenerator.providerLayerReference, options.providerLayer),
+    Effect.provide(CommitMessageGenerator.layer),
+  );
 
 const runGenerate = (options: {
   readonly instruction: string | undefined;
@@ -37,42 +40,34 @@ const runGenerate = (options: {
     readonly prompt: unknown;
   }) => CommitProposal;
 }) =>
-  runGenerateWithLayer({
+  runGenerateWithProviderLayer({
     instruction: options.instruction,
-    layer: CommitMessageGenerator.layer.pipe(
-      Layer.provide(
-        Layer.succeed(LanguageModel.LanguageModel, {
-          generateObject: (request) =>
-            Effect.succeed(
-              new LanguageModel.GenerateObjectResponse(
-                options.handleRequest({
-                  objectName: request.objectName,
-                  prompt: request.prompt,
-                }),
-                [],
-              ),
-            ),
-          generateText: () => {
-            throw new Error("generateText should not be called");
-          },
-          streamText: () => {
-            throw new Error("streamText should not be called");
-          },
-        }),
-      ),
-    ),
+    providerLayer: Layer.succeed(LanguageModel.LanguageModel, {
+      generateObject: (request) =>
+        Effect.succeed(
+          new LanguageModel.GenerateObjectResponse(
+            options.handleRequest({
+              objectName: request.objectName,
+              prompt: request.prompt,
+            }),
+            [],
+          ),
+        ),
+      generateText: () => {
+        throw new Error("generateText should not be called");
+      },
+      streamText: () => {
+        throw new Error("streamText should not be called");
+      },
+    }),
   });
 
 const createProviderLayer = (fetchImplementation: typeof globalThis.fetch) =>
-  CommitMessageGenerator.layer.pipe(
+  CommitMessageGenerator.languageModelLayer.pipe(
     Layer.provide(
-      CommitMessageGenerator.languageModelLayer.pipe(
-        Layer.provide(
-          OpenAiClient.layer({ apiKey: Redacted.make("sk-test-key") }).pipe(
-            Layer.provide(FetchHttpClient.layer),
-            Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetchImplementation)),
-          ),
-        ),
+      OpenAiClient.layer({ apiKey: Redacted.make("sk-test-key") }).pipe(
+        Layer.provide(FetchHttpClient.layer),
+        Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetchImplementation)),
       ),
     ),
   );
@@ -216,9 +211,9 @@ describe("CommitMessageGenerator", () => {
       Effect.gen(function* () {
         let requestInit: RequestInit | undefined;
 
-        const proposal = yield* runGenerateWithLayer({
+        const proposal = yield* runGenerateWithProviderLayer({
           instruction: undefined,
-          layer: createProviderLayer(async (_url, init) => {
+          providerLayer: createProviderLayer(async (_url, init) => {
             requestInit = init;
 
             return new Response(
@@ -279,9 +274,9 @@ describe("CommitMessageGenerator", () => {
       }>;
 
       for (const testCase of cases) {
-        const error = yield* runGenerateWithLayer({
+        const error = yield* runGenerateWithProviderLayer({
           instruction: undefined,
-          layer: createProviderLayer(
+          providerLayer: createProviderLayer(
             async () =>
               new Response(
                 JSON.stringify({
