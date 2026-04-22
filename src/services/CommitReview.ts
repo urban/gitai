@@ -34,6 +34,7 @@ export class CommitReview extends Context.Service<
 
           const approved = yield* Prompt.confirm({
             message: "Approve this commit message?",
+            initial: true,
             label: {
               confirm: "approve",
               deny: "reject",

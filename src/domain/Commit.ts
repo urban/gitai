@@ -54,7 +54,7 @@ export const GitAiConfig = Schema.Struct({
 export type GitAiConfig = typeof GitAiConfig.Type;
 
 export const defaultGitAiConfig: GitAiConfig = {
-  model: "codex-medium",
+  model: "gpt-5.4",
   reasoningEffort: "medium",
 };
 

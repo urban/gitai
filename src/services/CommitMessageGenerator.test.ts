@@ -152,16 +152,17 @@ describe("CommitMessageGenerator", () => {
         assert.strictEqual(capturedArgs[0], "exec");
         assert.strictEqual(getFlagValue(capturedArgs, "--model"), defaultGitAiConfig.model);
         assert.strictEqual(getFlagValue(capturedArgs, "--sandbox"), "read-only");
-        assert.strictEqual(getFlagValue(capturedArgs, "--ask-for-approval"), "never");
         assert.isTrue(capturedArgs.includes("--ephemeral"));
         assert.strictEqual(getFlagValue(capturedArgs, "--color"), "never");
         assert.strictEqual(capturedWorkingDirectory, stagedSnapshot.repoRoot);
         assert.match(capturedPrompt, /focus on test coverage/u);
         assert.match(capturedPrompt, /diff --git a\/src\/index\.ts/u);
         assert.match(capturedPrompt, /Use medium reasoning effort/u);
+        assert.match(capturedPrompt, /Set body to null when no body adds useful detail/u);
         assert.match(capturedSchema, /"summary"/u);
         assert.match(capturedSchema, /"body"/u);
-        assert.match(capturedSchema, /"required":\["summary"\]/u);
+        assert.match(capturedSchema, /"type":"null"/u);
+        assert.match(capturedSchema, /"required":\["summary","body"\]/u);
         assert.deepStrictEqual(proposal, {
           summary: "test: improve generator coverage",
           body: "Assert the staged diff and instruction both shape the request.",
@@ -198,6 +199,7 @@ describe("CommitMessageGenerator", () => {
               writeFileSync(
                 outputPath,
                 JSON.stringify({
+                  body: null,
                   summary: "feat: log hello from the CLI entrypoint",
                 }),
                 "utf8",
@@ -210,6 +212,7 @@ describe("CommitMessageGenerator", () => {
 
         assert.strictEqual(getFlagValue(capturedArgs, "--model"), "codex-mini");
         assert.match(capturedPrompt, /Use high reasoning effort/u);
+        assert.match(capturedPrompt, /Set body to null when no body adds useful detail/u);
         assert.notMatch(capturedPrompt, /Additional instruction:/u);
         assert.deepStrictEqual(proposal, {
           summary: "feat: log hello from the CLI entrypoint",

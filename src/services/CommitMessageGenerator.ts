@@ -18,21 +18,45 @@ type CodexExecResult = {
 
 const textEncoder = new TextEncoder();
 
-const decodeCommitProposal = Schema.decodeUnknownSync(Schema.fromJsonString(CommitProposal));
+const CodexCommitProposal = Schema.Struct({
+  body: Schema.NullOr(Schema.NonEmptyString),
+  summary: Schema.NonEmptyString,
+});
+
+const decodeCodexCommitProposal = Schema.decodeUnknownSync(
+  Schema.fromJsonString(CodexCommitProposal),
+);
+
+const normalizeCommitProposal = (proposal: typeof CodexCommitProposal.Type): CommitProposal =>
+  proposal.body === null
+    ? {
+        summary: proposal.summary,
+      }
+    : {
+        body: proposal.body,
+        summary: proposal.summary,
+      };
 
 const commitProposalOutputSchema = JSON.stringify({
   additionalProperties: false,
   properties: {
     body: {
-      minLength: 1,
-      type: "string",
+      anyOf: [
+        {
+          minLength: 1,
+          type: "string",
+        },
+        {
+          type: "null",
+        },
+      ],
     },
     summary: {
       minLength: 1,
       type: "string",
     },
   },
-  required: ["summary"],
+  required: ["summary", "body"],
   type: "object",
 });
 
@@ -47,7 +71,8 @@ const buildCommitProposalPrompt = (
       "Return exactly one JSON object that matches the provided output schema.",
       "Do not wrap the JSON in Markdown.",
       `Use ${reasoningEffort} reasoning effort when choosing the summary and optional body.`,
-      "Keep the summary specific to the staged changes and include a body only when it adds useful detail.",
+      "Keep the summary specific to the staged changes.",
+      "Set body to null when no body adds useful detail.",
     ].join("\n"),
     `Staged diff:\n${snapshot.stagedPatch}`,
   ];
@@ -172,8 +197,6 @@ export class CommitMessageGenerator extends Context.Service<
                     config.model,
                     "--sandbox",
                     "read-only",
-                    "--ask-for-approval",
-                    "never",
                     "--ephemeral",
                     "--color",
                     "never",
@@ -207,7 +230,7 @@ export class CommitMessageGenerator extends Context.Service<
               .pipe(Effect.mapError((error) => toProviderError(error.message)));
 
             return yield* Effect.try({
-              try: () => decodeCommitProposal(output),
+              try: () => normalizeCommitProposal(decodeCodexCommitProposal(output)),
               catch: (cause) => toResponseDecodeError(toErrorMessage(cause)),
             });
           }),
