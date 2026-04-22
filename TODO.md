@@ -1,0 +1,3 @@
+- [ ] I don't think the `src/services/CommitMessageGenerator.ts` file needs to pass `--output-last-message` to the `codex exec` command because it can be read from `stdout`.
+- [ ] I don't think `--output-schema` is necessary because I just need the message and I can describe the structure in the prompt.
+- [ ] Add "thinking" feedback to the user while processing the request. Consider using the same style of feedback Pi uses.
