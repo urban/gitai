@@ -1,7 +1,8 @@
 import { Effect, Schema } from "effect";
-import { Command, Flag, Prompt } from "effect/unstable/cli";
-import { GitClient } from "../services/GitClient";
-import { AiGenerator } from "../services/AiGenerator";
+import { Command, Flag } from "effect/unstable/cli";
+import { type CommitOutcomeType } from "../domain/Commit";
+import { formatCommitOperationalError } from "../errors/CommitError";
+import { CommitWorkflow } from "../services/CommitWorkflow";
 
 class CommitCommandError extends Schema.TaggedErrorClass<CommitCommandError>()(
   "CommitCommandError",
@@ -16,35 +17,29 @@ const commitConfig = {
     Flag.withDefault(3),
     Flag.withDescription("Number of context lines to show"),
   ),
-} as const;
+};
 
 type CommitConfig = Command.Command.Config.Infer<typeof commitConfig>;
 
-const handler = Effect.fnUntraced(function* ({ contextLinesOption }: CommitConfig) {
-  const gitClient = yield* GitClient;
-  const aiGenerator = yield* AiGenerator;
-
-  const rawDiff = yield* gitClient.getStagedDiff(contextLinesOption);
-  const diff = yield* gitClient.filterDiff(rawDiff);
-
-  const response = yield* aiGenerator
-    .generateCommitMessage(diff)
-    .pipe(Effect.mapError((error) => new CommitCommandError({ message: error.message })));
-
-  yield* Effect.log("Generated Commit Message");
-  yield* Effect.log();
-  yield* Effect.log(response.message);
-  yield* Effect.log();
-
-  const confirm = yield* Prompt.confirm({
-    initial: true,
-    message: "Would you like to commit with this message?",
-  });
-
-  if (confirm) {
-    yield* gitClient.commit(response.message);
+const renderOutcome = Effect.fn("commit.renderOutcome")(function* (outcome: CommitOutcomeType) {
+  if (outcome._tag === "Committed") {
     yield* Effect.log("Successfully committed changes!");
   }
+});
+
+const handler = Effect.fnUntraced(function* ({ contextLinesOption }: CommitConfig) {
+  const workflow = yield* CommitWorkflow;
+  const outcome = yield* workflow.run({ contextLines: contextLinesOption }).pipe(
+    Effect.mapError(
+      (error) =>
+        new CommitCommandError({
+          message: formatCommitOperationalError(error),
+          cause: error,
+        }),
+    ),
+  );
+
+  yield* renderOutcome(outcome);
 });
 
 const commandCommit = Command.make("commit", commitConfig).pipe(

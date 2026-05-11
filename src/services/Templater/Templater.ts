@@ -21,7 +21,7 @@ class Templater extends Context.Service<
       vars: TemplateVars,
     ) => Effect.Effect<string, TemplaterError, never>;
   }
->()("@gitai/Templater") {
+>()("@urban/gitai/services/Templater/Templater") {
   static readonly layer = Layer.effect(
     Templater,
     Effect.gen(function* () {
@@ -30,7 +30,8 @@ class Templater extends Context.Service<
 
       const load = Effect.fn("Templater.load")(function* (url: URL) {
         const filepath = yield* path.fromFileUrl(url);
-        if (!fs.exists(filepath)) {
+        const exists = yield* fs.exists(filepath);
+        if (!exists) {
           return yield* TemplaterError.make({
             message: `${filepath} does not exist`,
           });

@@ -28,39 +28,37 @@ type CliAgentCommand = Readonly<{
 const OUTPUT_LAST_MESSAGE_FILENAME = "codex-last-message.txt";
 const OUTPUT_SCHEMA_FILENAME = "codex-output-schema.json";
 
+type JsonSchemaDocument = ReturnType<typeof Schema.toJsonSchemaDocument>;
+type JsonSchema = JsonSchemaDocument["schema"];
+
 const buildCodexArgs = ({
   outputFilepath,
   outputSchemaFilepath,
 }: {
-  outputFilepath: string;
-  outputSchemaFilepath?: string | undefined;
-}) => {
-  const args = [
-    "-a",
-    "never",
-    "exec",
-    "--sandbox",
-    "read-only",
-    "--output-last-message",
-    outputFilepath,
-  ];
+  readonly outputFilepath: string;
+  readonly outputSchemaFilepath?: string | undefined;
+}): ReadonlyArray<string> => [
+  "-a",
+  "never",
+  "exec",
+  "--sandbox",
+  "read-only",
+  "--output-last-message",
+  outputFilepath,
+  ...(outputSchemaFilepath === undefined ? [] : ["--output-schema", outputSchemaFilepath]),
+  "-",
+];
 
-  if (outputSchemaFilepath !== undefined) {
-    args.push("--output-schema", outputSchemaFilepath);
-  }
+const isObjectRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  Object(value) === value;
 
-  args.push("-");
-  return args;
-};
+const isTopLevelRef = (
+  schema: JsonSchema,
+): schema is JsonSchema & Readonly<{ readonly $ref: string }> =>
+  isObjectRecord(schema) && typeof schema.$ref === "string";
 
-const resolveTopLevelRef = (document: ReturnType<typeof Schema.toJsonSchemaDocument>) => {
-  const ref =
-    typeof document.schema === "object" &&
-    document.schema !== null &&
-    "$ref" in document.schema &&
-    typeof document.schema.$ref === "string"
-      ? document.schema.$ref
-      : undefined;
+const resolveTopLevelRef = (document: JsonSchemaDocument): JsonSchema => {
+  const ref = isTopLevelRef(document.schema) ? document.schema.$ref : undefined;
 
   if (ref === undefined || !ref.startsWith("#/$defs/")) {
     return document.schema;
@@ -70,27 +68,37 @@ const resolveTopLevelRef = (document: ReturnType<typeof Schema.toJsonSchemaDocum
   return document.definitions[definitionKey] ?? document.schema;
 };
 
-const renderOutputSchema = Effect.fn("CliAgent.renderOutputSchema")(function* (schema: Schema.Top) {
-  return yield* Effect.try({
-    try: () => {
-      const document = Schema.toJsonSchemaDocument(schema);
-      const jsonSchema = {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        ...resolveTopLevelRef(document),
-        ...(Object.keys(document.definitions).length === 0
-          ? {}
-          : {
-              $defs: document.definitions,
-            }),
-      };
-      return JSON.stringify(jsonSchema, null, 2);
-    },
+const renderOutputSchema = Effect.fn("CliAgent.renderOutputSchema")(function* (
+  schema: Schema.Top,
+): Effect.fn.Return<string, CliAgentError> {
+  const document = yield* Effect.try({
+    try: () => Schema.toJsonSchemaDocument(schema),
     catch: (cause) =>
       new CliAgentError({
         message: "Failed to render codex output schema",
         cause,
       }),
   });
+
+  const jsonSchema = {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    ...resolveTopLevelRef(document),
+    ...(Object.keys(document.definitions).length === 0
+      ? {}
+      : {
+          $defs: document.definitions,
+        }),
+  };
+
+  return yield* Schema.encodeUnknownEffect(Schema.fromJsonString(Schema.Json))(jsonSchema).pipe(
+    Effect.mapError(
+      (cause) =>
+        new CliAgentError({
+          message: "Failed to render codex output schema",
+          cause,
+        }),
+    ),
+  );
 });
 
 class CliAgent extends Context.Service<
@@ -100,7 +108,7 @@ class CliAgent extends Context.Service<
       options: CliAgentCommand,
     ) => Effect.Effect<string, CliAgentError | PlatformError.PlatformError, never>;
   }
->()("@gitai/CliAgent") {
+>()("@urban/gitai/services/CliAgent/CliAgent") {
   static readonly layer = Layer.effect(
     CliAgent,
     Effect.gen(function* () {

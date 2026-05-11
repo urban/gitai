@@ -75,13 +75,13 @@ describe("compileTemplate", () => {
   it.effect("should evaluate object expressions with default variable value", () =>
     Effect.gen(function* () {
       const template = "User: ${name ?? nickName}.";
-      const data = { name: null, nickName: "Jonny" };
+      const data = { name: undefined, nickName: "Jonny" };
       const compiled = yield* compileTemplate(template, data);
       expect(compiled).toBe("User: Jonny.");
     }),
   );
 
-  it.effect("should evaluate turnary expressions", () =>
+  it.effect("should evaluate ternary expressions", () =>
     Effect.gen(function* () {
       const template = 'The result is ${value ? "Yes" : "No"}.';
       const data = { value: true };
@@ -90,7 +90,7 @@ describe("compileTemplate", () => {
     }),
   );
 
-  it.effect("should evaluate turnary branch variable references", () =>
+  it.effect("should evaluate ternary branch variable references", () =>
     Effect.gen(function* () {
       const template = "Role: ${isAdmin ? adminLabel : userLabel}.";
       const data = { isAdmin: true, adminLabel: "Admin", userLabel: "User" };
@@ -139,7 +139,7 @@ describe("compileTemplate edge cases", () => {
     }),
   );
 
-  it.effect("should evaluate turnary expressions without valid conditional", () =>
+  it.effect("should evaluate ternary expressions without valid conditional", () =>
     Effect.gen(function* () {
       const template = 'The result is ${value ? "Yes" : "No"}.';
       const data = { value: undefined };
@@ -148,7 +148,7 @@ describe("compileTemplate edge cases", () => {
     }),
   );
 
-  it.effect("should evaluate turnary expressions over multiple lines", () =>
+  it.effect("should evaluate ternary expressions over multiple lines", () =>
     Effect.gen(function* () {
       const template = `The result is %{value
   ? "Yes"
@@ -205,7 +205,7 @@ describe("compileTemplate edge cases", () => {
     }),
   );
 
-  it.effect("should evaluate turnary expressions containing template literals", () =>
+  it.effect("should evaluate ternary expressions containing template literals", () =>
     Effect.gen(function* () {
       const template = "The result is ${value ? `Yes ${name}` : `No ${name}`}.";
       const data = { value: true, name: "John" };
@@ -214,7 +214,7 @@ describe("compileTemplate edge cases", () => {
     }),
   );
 
-  it.effect("should allow question marks and colons inside quoted turnary branches", () =>
+  it.effect("should allow question marks and colons inside quoted ternary branches", () =>
     Effect.gen(function* () {
       const template = 'Value: ${flag ? "A ? B" : "C : D"}.';
       const data = { flag: true };

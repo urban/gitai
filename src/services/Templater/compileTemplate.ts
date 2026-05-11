@@ -1,10 +1,16 @@
 import { Effect, Schema } from "effect";
 
 /** Allowed primitive values for template variable substitution. */
-type TemplateValues = string | number | boolean | null | undefined;
+type TemplateValues = string | number | boolean | undefined;
 
 /** Dictionary of template variables keyed by placeholder name. */
 type TemplateVars = Readonly<Record<string, TemplateValues>>;
+
+type CompileTemplateOptions = Readonly<{
+  pattern?: RegExp;
+}>;
+
+type Quote = "'" | '"' | "`";
 
 /**
  * Error raised when a template expression attempts to call a function.
@@ -55,12 +61,12 @@ const extractLiteral = (str: string, vars: TemplateVars): string | undefined => 
  * Returns -1 when the operator is not found.
  */
 const findTopLevelOperatorIndex = (value: string, operator: string): number => {
-  let quote: "'" | '"' | "`" | null = null;
+  let quote: Quote | undefined = undefined;
   let escaped = false;
 
   for (let i = 0; i < value.length; i++) {
     const char = value[i];
-    if (quote !== null) {
+    if (quote !== undefined) {
       if (escaped) {
         escaped = false;
         continue;
@@ -69,7 +75,7 @@ const findTopLevelOperatorIndex = (value: string, operator: string): number => {
         escaped = true;
         continue;
       }
-      if (char === quote) quote = null;
+      if (char === quote) quote = undefined;
       continue;
     }
 
@@ -112,14 +118,14 @@ const splitTernaryExpression = (
   const questionMarkIndex = findTopLevelOperatorIndex(value, "?");
   if (questionMarkIndex < 0) return undefined;
 
-  let quote: "'" | '"' | "`" | null = null;
+  let quote: Quote | undefined = undefined;
   let escaped = false;
   let nestedTernaryDepth = 0;
 
   for (let i = questionMarkIndex + 1; i < value.length; i++) {
     const char = value[i];
 
-    if (quote !== null) {
+    if (quote !== undefined) {
       if (escaped) {
         escaped = false;
         continue;
@@ -128,7 +134,7 @@ const splitTernaryExpression = (
         escaped = true;
         continue;
       }
-      if (char === quote) quote = null;
+      if (char === quote) quote = undefined;
       continue;
     }
 
@@ -169,14 +175,14 @@ const parseDefaultMatches = (template: string): ReadonlyArray<TemplateMatch> => 
     const start = template.indexOf("${", cursor);
     if (start < 0) break;
 
-    let quote: "'" | '"' | "`" | null = null;
+    let quote: Quote | undefined = undefined;
     let escaped = false;
     let i = start + 2;
 
     while (i < template.length) {
       const char = template[i];
 
-      if (quote !== null) {
+      if (quote !== undefined) {
         if (escaped) {
           escaped = false;
           i += 1;
@@ -188,7 +194,7 @@ const parseDefaultMatches = (template: string): ReadonlyArray<TemplateMatch> => 
           continue;
         }
         if (char === quote) {
-          quote = null;
+          quote = undefined;
           i += 1;
           continue;
         }
@@ -233,10 +239,8 @@ const parseDefaultMatches = (template: string): ReadonlyArray<TemplateMatch> => 
 const compileTemplate = (
   template: string,
   vars: TemplateVars,
-  opts?: {
-    readonly pattern?: RegExp;
-  },
-) =>
+  opts?: CompileTemplateOptions,
+): Effect.Effect<string, TemplateFunctionCallNotAllowedError, never> =>
   Effect.gen(function* () {
     const pattern = opts?.pattern;
 
@@ -249,17 +253,18 @@ const compileTemplate = (
       return literal ?? "";
     };
 
-    const matches = pattern
-      ? Array.from(template.matchAll(pattern)).map((match) => {
-          const start = match.index ?? 0;
-          return {
-            placeholder: match[0],
-            expression: (match[1] ?? "").trim(),
-            start,
-            end: start + match[0].length,
-          } satisfies TemplateMatch;
-        })
-      : parseDefaultMatches(template);
+    const matches =
+      pattern !== undefined
+        ? Array.from(template.matchAll(pattern)).map((match) => {
+            const start = match.index ?? 0;
+            return {
+              placeholder: match[0],
+              expression: (match[1] ?? "").trim(),
+              start,
+              end: start + match[0].length,
+            } satisfies TemplateMatch;
+          })
+        : parseDefaultMatches(template);
 
     let output = "";
     let cursor = 0;
@@ -268,9 +273,8 @@ const compileTemplate = (
       output += template.slice(cursor, match.start);
       cursor = match.end;
 
-      // error on function calls
-      const functionMatch = match.expression.match(/(\b\w+\s*)\(/);
-      if (functionMatch !== null) {
+      const functionMatch = match.expression.match(/(\b\w+\s*)\(/) ?? undefined;
+      if (functionMatch !== undefined) {
         const functionName = functionMatch[1]?.trim() ?? "";
         return yield* TemplateFunctionCallNotAllowedError.make({
           functionName,
@@ -283,7 +287,7 @@ const compileTemplate = (
         const [leftRaw, rightRaw] = nullishSplit;
         const left = leftRaw.trim();
         const leftValue = vars[left];
-        if (leftValue !== null && leftValue !== undefined) {
+        if (leftValue !== undefined) {
           output += String(leftValue);
           continue;
         }
@@ -295,7 +299,9 @@ const compileTemplate = (
       if (ternarySplit !== undefined) {
         const conditionKey = ternarySplit.condition.trim();
         const conditionValue = vars[conditionKey];
-        output += evaluateAtom(conditionValue ? ternarySplit.whenTrue : ternarySplit.whenFalse);
+        output += evaluateAtom(
+          conditionValue === true ? ternarySplit.whenTrue : ternarySplit.whenFalse,
+        );
         continue;
       }
 
