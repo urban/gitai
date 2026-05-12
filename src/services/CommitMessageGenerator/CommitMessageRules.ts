@@ -12,7 +12,6 @@ class CommitMessageResponse extends Schema.Class<CommitMessageResponse>("CommitM
   message: Schema.String,
 }) {}
 
-const footerLinePattern = /^(BREAKING CHANGE: .+|[A-Za-z][A-Za-z-]*: .+)$/u;
 const obviousNonImperativeSubjectPattern =
   /^(Added|Adding|Adds|Changed|Changing|Changes|Fixed|Fixing|Fixes|Improved|Improving|Improves|Refactored|Refactoring|Refactors|Removed|Removing|Removes|Updated|Updating|Updates)\b/u;
 const diffLikeBodyLinePatterns = [/^diff --git /u, /^index /u, /^@@ /u, /^--- /u, /^\+\+\+ /u];
@@ -20,9 +19,6 @@ const diffLikeBodyLinePatterns = [/^diff --git /u, /^index /u, /^@@ /u, /^--- /u
 const failValidation = (message: string) => new CommitMessageValidationError({ message });
 
 const normalizeLineEndings = (message: string): string => message.replaceAll("\r\n", "\n");
-
-const isFooterSection = (section: string): boolean =>
-  section.split("\n").every((line) => footerLinePattern.test(line));
 
 const validateSubject = Effect.fn("CommitMessageRules.validateSubject")(function* (
   subject: string,
@@ -61,47 +57,23 @@ const validateBody = Effect.fn("CommitMessageRules.validateBody")(function* (
     return yield* failValidation("The generated commit body must not be empty when present.");
   }
 
-  if (isFooterSection(body)) {
+  if (body.startsWith("\n")) {
     return yield* failValidation(
-      "The generated commit footer cannot appear without a preceding body section.",
+      "The generated commit message must separate the subject and body with exactly one blank line.",
     );
   }
 
   const invalidLine = body
     .split("\n")
-    .find(
-      (line) => line.length === 0 || diffLikeBodyLinePatterns.some((pattern) => pattern.test(line)),
-    );
+    .find((line) => diffLikeBodyLinePatterns.some((pattern) => pattern.test(line)));
 
   if (invalidLine === undefined) {
     return;
   }
 
-  if (invalidLine.length === 0) {
-    return yield* failValidation(
-      "The generated commit body must use one contiguous paragraph block for this MVP.",
-    );
-  }
-
   return yield* failValidation(
     "The generated commit body must explain the change instead of replaying raw diff output.",
   );
-});
-
-const validateFooter = Effect.fn("CommitMessageRules.validateFooter")(function* (
-  footer: string,
-): Effect.fn.Return<void, CommitMessageValidationError> {
-  if (footer.length === 0) {
-    return yield* failValidation("The generated commit footer must not be empty when present.");
-  }
-
-  const invalidLine = footer.split("\n").find((line) => !footerLinePattern.test(line));
-
-  if (invalidLine !== undefined) {
-    return yield* failValidation(
-      "The generated commit footer must use metadata lines such as `Refs:` or `BREAKING CHANGE:`.",
-    );
-  }
 });
 
 const validateCommitMessage = Effect.fn("CommitMessageRules.validateCommitMessage")(function* (
@@ -115,21 +87,15 @@ const validateCommitMessage = Effect.fn("CommitMessageRules.validateCommitMessag
     );
   }
 
-  const sections = normalizedMessage.split("\n\n");
-
-  if (sections.some((section) => section.length === 0)) {
-    return yield* failValidation(
-      "The generated commit message must separate sections with exactly one blank line.",
-    );
-  }
-
-  if (sections.length > 3) {
-    return yield* failValidation(
-      "The generated commit message may contain only a subject, one body section, and one footer section.",
-    );
-  }
-
-  const [subject = "", body, footer] = sections;
+  const subjectBodySeparatorIndex = normalizedMessage.indexOf("\n\n");
+  const subject =
+    subjectBodySeparatorIndex === -1
+      ? normalizedMessage
+      : normalizedMessage.slice(0, subjectBodySeparatorIndex);
+  const body =
+    subjectBodySeparatorIndex === -1
+      ? undefined
+      : normalizedMessage.slice(subjectBodySeparatorIndex + 2);
 
   if (subject.includes("\n")) {
     return yield* failValidation(
@@ -141,10 +107,6 @@ const validateCommitMessage = Effect.fn("CommitMessageRules.validateCommitMessag
 
   if (body !== undefined) {
     yield* validateBody(body);
-  }
-
-  if (footer !== undefined) {
-    yield* validateFooter(footer);
   }
 
   return normalizedMessage;

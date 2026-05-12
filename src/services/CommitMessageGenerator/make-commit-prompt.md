@@ -6,7 +6,8 @@ Rules:
 - Use a mandatory subject line.
 - Subject must be imperative, start with a capital letter, be shorter than 72 characters, and not end with a period.
 - Add a body only when it adds useful context.
-- Separate subject, body, and footer sections with exactly one blank line.
+- Do not add a footer or trailer section.
+- Separate the subject and body with exactly one blank line when a body is present.
 - Explain intent and impact instead of replaying the diff.
 - Do not use emojis or Markdown fences.
 
