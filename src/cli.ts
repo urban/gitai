@@ -10,7 +10,6 @@ import { commandCommit } from "./commands/commit";
 import { CliAgent } from "./services/CliAgent";
 import { CliPresenter } from "./services/CliPresenter";
 import { CommitMessageGenerator } from "./services/CommitMessageGenerator";
-import { CommitReview } from "./services/CommitReview";
 import { CommitWorkflow } from "./services/CommitWorkflow";
 import { GitRepository } from "./services/GitRepository";
 import { Templater } from "./services/Templater";
@@ -21,7 +20,6 @@ const cli = Command.make("gitai");
 const MainLayer = Layer.mergeAll(CommitWorkflow.layer, cliLoggerLayer).pipe(
   Layer.provideMerge(GitRepository.layer),
   Layer.provideMerge(CommitMessageGenerator.layer),
-  Layer.provideMerge(CommitReview.layer),
   Layer.provideMerge(CliAgent.layer),
   Layer.provideMerge(CliPresenter.layer),
   Layer.provideMerge(WorkIndicator.layer),

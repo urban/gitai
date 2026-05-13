@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { CliAgent } from "../CliAgent";
-import { CliPresenter } from "../CliPresenter";
 import { CommitMessageGenerator } from "./CommitMessageGenerator";
 import { Templater } from "../Templater";
 
@@ -19,14 +18,6 @@ const TestLayer = CommitMessageGenerator.layer.pipe(
         Templater.of({
           compile: () => Effect.succeed("prompt"),
           load: () => Effect.succeed("template"),
-        }),
-      ),
-      Layer.succeed(
-        CliPresenter,
-        CliPresenter.of({
-          error: () => Effect.void,
-          log: () => Effect.void,
-          applyIndicator: (effect) => effect,
         }),
       ),
     ),
