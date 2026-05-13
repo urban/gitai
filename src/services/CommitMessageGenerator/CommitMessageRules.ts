@@ -14,11 +14,25 @@ class CommitMessageResponse extends Schema.Class<CommitMessageResponse>("CommitM
 
 const obviousNonImperativeSubjectPattern =
   /^(Added|Adding|Adds|Changed|Changing|Changes|Fixed|Fixing|Fixes|Improved|Improving|Improves|Refactored|Refactoring|Refactors|Removed|Removing|Removes|Updated|Updating|Updates)\b/u;
-const diffLikeBodyLinePatterns = [/^diff --git /u, /^index /u, /^@@ /u, /^--- /u, /^\+\+\+ /u];
-
 const failValidation = (message: string) => new CommitMessageValidationError({ message });
 
 const normalizeLineEndings = (message: string): string => message.replaceAll("\r\n", "\n");
+
+const splitCommitMessage = (
+  message: string,
+): { readonly subject: string; readonly body: string | undefined } => {
+  const firstLineBreakIndex = message.indexOf("\n");
+
+  return firstLineBreakIndex === -1
+    ? { subject: message, body: undefined }
+    : {
+        subject: message.slice(0, firstLineBreakIndex),
+        body: message.slice(firstLineBreakIndex + 1).trim(),
+      };
+};
+
+const formatCommitMessage = (subject: string, body: string | undefined): string =>
+  body === undefined || body.length === 0 ? subject : `${subject}\n\n${body}`;
 
 const validateSubject = Effect.fn("CommitMessageRules.validateSubject")(function* (
   subject: string,
@@ -50,66 +64,14 @@ const validateSubject = Effect.fn("CommitMessageRules.validateSubject")(function
   }
 });
 
-const validateBody = Effect.fn("CommitMessageRules.validateBody")(function* (
-  body: string,
-): Effect.fn.Return<void, CommitMessageValidationError> {
-  if (body.length === 0) {
-    return yield* failValidation("The generated commit body must not be empty when present.");
-  }
-
-  if (body.startsWith("\n")) {
-    return yield* failValidation(
-      "The generated commit message must separate the subject and body with exactly one blank line.",
-    );
-  }
-
-  const invalidLine = body
-    .split("\n")
-    .find((line) => diffLikeBodyLinePatterns.some((pattern) => pattern.test(line)));
-
-  if (invalidLine === undefined) {
-    return;
-  }
-
-  return yield* failValidation(
-    "The generated commit body must explain the change instead of replaying raw diff output.",
-  );
-});
-
 const validateCommitMessage = Effect.fn("CommitMessageRules.validateCommitMessage")(function* (
   message: string,
 ): Effect.fn.Return<string, CommitMessageValidationError> {
-  const normalizedMessage = normalizeLineEndings(message);
-
-  if (normalizedMessage.startsWith("\n") || normalizedMessage.endsWith("\n")) {
-    return yield* failValidation(
-      "The generated commit message must not start or end with a blank line.",
-    );
-  }
-
-  const subjectBodySeparatorIndex = normalizedMessage.indexOf("\n\n");
-  const subject =
-    subjectBodySeparatorIndex === -1
-      ? normalizedMessage
-      : normalizedMessage.slice(0, subjectBodySeparatorIndex);
-  const body =
-    subjectBodySeparatorIndex === -1
-      ? undefined
-      : normalizedMessage.slice(subjectBodySeparatorIndex + 2);
-
-  if (subject.includes("\n")) {
-    return yield* failValidation(
-      "The generated commit message must separate the subject from later sections with a blank line.",
-    );
-  }
+  const { body, subject } = splitCommitMessage(normalizeLineEndings(message));
 
   yield* validateSubject(subject);
 
-  if (body !== undefined) {
-    yield* validateBody(body);
-  }
-
-  return normalizedMessage;
+  return formatCommitMessage(subject, body);
 });
 
 const decodeCommitMessageResponse = Effect.fn("CommitMessageRules.decodeCommitMessageResponse")(

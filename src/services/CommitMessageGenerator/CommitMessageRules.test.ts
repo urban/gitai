@@ -38,12 +38,21 @@ describe("CommitMessageRules", () => {
     }),
   );
 
-  it.effect("rejects body separated from subject by more than one blank line", () =>
+  it.effect("accepts and trims everything after the subject as the body", () =>
     Effect.gen(function* () {
-      const message = "Add commit workflow\n\n\nDocument the staged diff review flow";
-      const result = yield* validateCommitMessage(message).pipe(Effect.result);
+      const message = "Add commit workflow\n\n\nDocument the staged diff review flow\n\n";
+      const result = yield* validateCommitMessage(message);
 
-      assert.isTrue(Result.isFailure(result));
+      assert.strictEqual(result, "Add commit workflow\n\nDocument the staged diff review flow");
+    }),
+  );
+
+  it.effect("accepts body content without semantic validation", () =>
+    Effect.gen(function* () {
+      const message = "Add commit workflow\n\ndiff --git a/file.ts b/file.ts";
+      const result = yield* validateCommitMessage(message);
+
+      assert.strictEqual(result, message);
     }),
   );
 
