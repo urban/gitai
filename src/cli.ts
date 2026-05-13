@@ -2,17 +2,19 @@
 
 import * as BunRuntime from "@effect/platform-bun/BunRuntime";
 import * as BunServices from "@effect/platform-bun/BunServices";
-import { Cause, Console, Effect, Exit, Layer, Option } from "effect";
+import { Cause, Effect, Exit, Layer, Option } from "effect";
 import { Command } from "effect/unstable/cli";
 import pkg from "../package.json" with { type: "json" };
 import { cliLoggerLayer } from "./CliLogger";
 import { commandCommit } from "./commands/commit";
 import { CliAgent } from "./services/CliAgent";
+import { CliPresenter } from "./services/CliPresenter";
 import { CommitMessageGenerator } from "./services/CommitMessageGenerator";
 import { CommitReview } from "./services/CommitReview";
 import { CommitWorkflow } from "./services/CommitWorkflow";
 import { GitRepository } from "./services/GitRepository";
 import { Templater } from "./services/Templater";
+import { WorkIndicator } from "./services/WorkIndicator";
 
 const cli = Command.make("gitai");
 
@@ -21,6 +23,8 @@ const MainLayer = Layer.mergeAll(CommitWorkflow.layer, cliLoggerLayer).pipe(
   Layer.provideMerge(CommitMessageGenerator.layer),
   Layer.provideMerge(CommitReview.layer),
   Layer.provideMerge(CliAgent.layer),
+  Layer.provideMerge(CliPresenter.layer),
+  Layer.provideMerge(WorkIndicator.layer),
   Layer.provideMerge(Templater.layer),
   Layer.provideMerge(BunServices.layer),
 );
@@ -53,7 +57,12 @@ if (import.meta.main) {
       version: pkg.version,
     }),
     Effect.tapCause((cause: Cause.Cause<unknown>) =>
-      Cause.hasInterruptsOnly(cause) ? Effect.void : Console.error(getCauseMessage(cause)),
+      Cause.hasInterruptsOnly(cause)
+        ? Effect.void
+        : Effect.gen(function* () {
+            const presenter = yield* CliPresenter;
+            yield* presenter.error(getCauseMessage(cause));
+          }),
     ),
     // @effect-diagnostics-next-line strictEffectProvide:off
     Effect.provide(MainLayer),

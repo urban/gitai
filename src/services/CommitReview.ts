@@ -1,7 +1,8 @@
-import { Console, Context, Effect, FileSystem, Layer, Path } from "effect";
+import { Context, Effect, FileSystem, Layer, Path } from "effect";
 import * as Terminal from "effect/Terminal";
 import * as Prompt from "effect/unstable/cli/Prompt";
 import { type CommitProposalType, type ReviewDecisionType } from "../domain/Commit";
+import { CliPresenter } from "./CliPresenter";
 
 const toReviewDecision = (approved: boolean): ReviewDecisionType =>
   approved ? { _tag: "Approve" } : { _tag: "Reject" };
@@ -18,13 +19,14 @@ class CommitReview extends Context.Service<
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const terminal = yield* Terminal.Terminal;
+      const presenter = yield* CliPresenter;
 
       const review = Effect.fn("CommitReview.review")(
         function* (proposal: CommitProposalType) {
-          yield* Console.log("Generated Commit Message");
-          yield* Console.log();
-          yield* Console.log(proposal.message);
-          yield* Console.log();
+          yield* presenter.log("Generated Commit Message");
+          yield* presenter.log();
+          yield* presenter.log(proposal.message);
+          yield* presenter.log();
 
           const approved = yield* Prompt.confirm({
             initial: true,

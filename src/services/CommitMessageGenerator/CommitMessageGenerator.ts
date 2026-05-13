@@ -1,10 +1,11 @@
-import { Console, Context, Effect, Layer, PlatformError } from "effect";
+import { Context, Effect, Layer, PlatformError } from "effect";
 import { type CommitProposalType, type StagedSnapshotType } from "../../domain/Commit";
 import {
   CommitMessageGeneratorError,
   type CommitMessageGeneratorErrorReasonType,
 } from "../../errors/CommitError";
 import { CliAgent, type CliAgentError } from "../CliAgent";
+import { CliPresenter } from "../CliPresenter";
 import {
   CommitMessageResponse,
   type CommitMessageValidationError,
@@ -49,6 +50,7 @@ class CommitMessageGenerator extends Context.Service<
     Effect.gen(function* () {
       const templater = yield* Templater;
       const agent = yield* CliAgent;
+      const presenter = yield* CliPresenter;
 
       const getCommitTemplate = yield* templater
         .load(new URL("./make-commit-prompt.md", import.meta.url))
@@ -58,7 +60,6 @@ class CommitMessageGenerator extends Context.Service<
         function* (
           snapshot: StagedSnapshotType,
         ): Effect.fn.Return<CommitProposalType, CommitMessageGeneratorError> {
-          yield* Console.log("Generating commit message...");
           yield* Effect.logDebug("Preparing commit prompt", {
             repoRoot: snapshot.repoRoot,
             stagedPatchBytes: snapshot.stagedPatch.length,
@@ -73,9 +74,11 @@ class CommitMessageGenerator extends Context.Service<
             .pipe(Effect.mapError(toPromptError));
           yield* Effect.logDebug("Compiled commit prompt", { promptBytes: prompt.length });
 
-          const response = yield* agent
-            .command({ prompt, outputSchema: CommitMessageResponse })
-            .pipe(Effect.mapError(toProviderError));
+          const response = yield* presenter.applyIndicator(
+            agent
+              .command({ prompt, outputSchema: CommitMessageResponse })
+              .pipe(Effect.mapError(toProviderError)),
+          );
           yield* Effect.logDebug("Received commit message response", {
             responseBytes: response.length,
           });

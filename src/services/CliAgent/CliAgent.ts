@@ -1,6 +1,5 @@
 import {
   Config,
-  Console,
   Duration,
   Effect,
   Exit,
@@ -126,7 +125,6 @@ class CliAgent extends Context.Service<
         function* ({ outputSchema, prompt }: CliAgentCommand) {
           return yield* Effect.scoped(
             Effect.gen(function* () {
-              yield* Console.log("Running command...");
               yield* Effect.logDebug("Preparing codex command", {
                 hasOutputSchema: outputSchema !== undefined,
                 promptBytes: prompt.length,

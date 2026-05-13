@@ -1,7 +1,8 @@
-import { Console, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 import { type CommitOutcomeType } from "../domain/Commit";
 import { formatCommitOperationalError } from "../errors/CommitError";
+import { CliPresenter } from "../services/CliPresenter";
 import { CommitWorkflow } from "../services/CommitWorkflow";
 
 class CommitCommandError extends Schema.TaggedErrorClass<CommitCommandError>()(
@@ -22,8 +23,10 @@ const commitConfig = {
 type CommitConfig = Command.Command.Config.Infer<typeof commitConfig>;
 
 const renderOutcome = Effect.fn("commit.renderOutcome")(function* (outcome: CommitOutcomeType) {
+  const presenter = yield* CliPresenter;
+
   if (outcome._tag === "Committed") {
-    yield* Console.log("Successfully committed changes!");
+    yield* presenter.log("Successfully committed changes!");
   }
 });
 
