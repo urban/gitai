@@ -20,24 +20,42 @@ class CommitWorkflow extends Context.Service<
       const generator = yield* CommitMessageGenerator;
       const review = yield* CommitReview;
 
-      const run = Effect.fn("CommitWorkflow.run")(function* (
-        input: CommitInvocationInputType,
-      ): Effect.fn.Return<CommitOutcomeType, CommitOperationalError> {
-        const snapshot = yield* repository.loadSnapshot(".", input.contextLines);
-        const proposal = yield* generator.generate(snapshot);
-        const decision = yield* review.review(proposal);
+      const run = Effect.fn("CommitWorkflow.run")(
+        function* (
+          input: CommitInvocationInputType,
+        ): Effect.fn.Return<CommitOutcomeType, CommitOperationalError> {
+          yield* Effect.logDebug("Loading staged snapshot", { contextLines: input.contextLines });
+          const snapshot = yield* repository.loadSnapshot(".", input.contextLines);
+          yield* Effect.logDebug("Loaded staged snapshot", {
+            repoRoot: snapshot.repoRoot,
+            stagedPatchBytes: snapshot.stagedPatch.length,
+          });
 
-        if (decision._tag === "Reject") {
-          return { _tag: "Rejected" };
-        }
+          yield* Effect.logDebug("Generating commit proposal");
+          const proposal = yield* generator.generate(snapshot);
+          yield* Effect.logDebug("Generated commit proposal", {
+            commitMessageBytes: proposal.message.length,
+          });
 
-        yield* repository.commitApproved(snapshot, proposal.message);
+          yield* Effect.logDebug("Requesting commit review");
+          const decision = yield* review.review(proposal);
+          yield* Effect.logDebug("Commit review completed", { decision: decision._tag });
 
-        return {
-          _tag: "Committed",
-          commitMessage: proposal.message,
-        };
-      });
+          if (decision._tag === "Reject") {
+            return { _tag: "Rejected" };
+          }
+
+          yield* Effect.logDebug("Committing approved proposal");
+          yield* repository.commitApproved(snapshot, proposal.message);
+
+          return {
+            _tag: "Committed",
+            commitMessage: proposal.message,
+          };
+        },
+        Effect.annotateLogs({ service: "CommitWorkflow" }),
+        Effect.withLogSpan("commit.workflow"),
+      );
 
       return CommitWorkflow.of({ run });
     }),

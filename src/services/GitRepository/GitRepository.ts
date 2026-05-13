@@ -1,4 +1,4 @@
-import { Config, Context, Effect, Fiber, FileSystem, Layer, PlatformError, Stream } from "effect";
+import { Context, Effect, Fiber, FileSystem, Layer, PlatformError, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { type StagedSnapshotType } from "../../domain/Commit";
 import {
@@ -95,7 +95,6 @@ class GitRepository extends Context.Service<
     Effect.gen(function* () {
       const executor = yield* ChildProcessSpawner.ChildProcessSpawner;
       const fs = yield* FileSystem.FileSystem;
-      const isDebug = yield* Config.boolean("DEBUG").pipe(Config.withDefault(false));
 
       const makeGitCommand = (cwd: string, args: GitCommand) =>
         ChildProcess.make("git", args, {
@@ -104,47 +103,62 @@ class GitRepository extends Context.Service<
           stdout: "pipe",
         });
 
-      const runGit = Effect.fn("GitRepository.runGit")(function* (
-        cwd: string,
-        args: GitCommand,
-      ): Effect.fn.Return<GitProcessResult, GitCommandError> {
-        return yield* Effect.scoped(
-          Effect.gen(function* () {
-            const process = yield* executor
-              .spawn(makeGitCommand(cwd, args))
-              .pipe(Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)));
+      const runGit = Effect.fn("GitRepository.runGit")(
+        function* (
+          cwd: string,
+          args: GitCommand,
+        ): Effect.fn.Return<GitProcessResult, GitCommandError> {
+          yield* Effect.logDebug("Running git command", {
+            command: gitCommand(args).join(" "),
+            cwd,
+          });
 
-            const stdoutFiber = yield* process.stdout.pipe(
-              Stream.decodeText(),
-              Stream.runCollect,
-              Effect.map((chunks) => chunks.join("")),
-              Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
-              Effect.forkScoped,
-            );
+          return yield* Effect.scoped(
+            Effect.gen(function* () {
+              const process = yield* executor
+                .spawn(makeGitCommand(cwd, args))
+                .pipe(Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)));
 
-            const stderrFiber = yield* process.stderr.pipe(
-              Stream.decodeText(),
-              Stream.runCollect,
-              Effect.map((chunks) => chunks.join("")),
-              Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
-              Effect.forkScoped,
-            );
+              const stdoutFiber = yield* process.stdout.pipe(
+                Stream.decodeText(),
+                Stream.runCollect,
+                Effect.map((chunks) => chunks.join("")),
+                Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
+                Effect.forkScoped,
+              );
 
-            const [exitCode, stdout, stderr] = yield* Effect.all(
-              [
-                process.exitCode.pipe(
-                  Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
-                ),
-                Fiber.join(stdoutFiber),
-                Fiber.join(stderrFiber),
-              ],
-              { concurrency: "unbounded" },
-            );
+              const stderrFiber = yield* process.stderr.pipe(
+                Stream.decodeText(),
+                Stream.runCollect,
+                Effect.map((chunks) => chunks.join("")),
+                Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
+                Effect.forkScoped,
+              );
 
-            return { exitCode, stderr, stdout };
-          }),
-        );
-      });
+              const [exitCode, stdout, stderr] = yield* Effect.all(
+                [
+                  process.exitCode.pipe(
+                    Effect.mapError((error) => toGitCommandErrorFromPlatform(args, error)),
+                  ),
+                  Fiber.join(stdoutFiber),
+                  Fiber.join(stderrFiber),
+                ],
+                { concurrency: "unbounded" },
+              );
+
+              yield* Effect.logDebug("Git command completed", {
+                command: gitCommand(args).join(" "),
+                exitCode,
+                stderrBytes: stderr.length,
+                stdoutBytes: stdout.length,
+              });
+
+              return { exitCode, stderr, stdout };
+            }),
+          );
+        },
+        Effect.annotateLogs({ service: "GitRepository" }),
+      );
 
       const resolveRepoRoot = Effect.fn("GitRepository.resolveRepoRoot")(function* (
         cwd: string,
@@ -153,7 +167,9 @@ class GitRepository extends Context.Service<
         const result = yield* runGit(cwd, args);
 
         if (result.exitCode === 0) {
-          return trimTrailingNewlines(result.stdout);
+          const repoRoot = trimTrailingNewlines(result.stdout);
+          yield* Effect.logDebug("Resolved git repository root", { repoRoot });
+          return repoRoot;
         }
 
         if (isNotGitRepositoryFailure(result)) {
@@ -192,18 +208,25 @@ class GitRepository extends Context.Service<
         }
 
         const stagedPatch = filterIgnoredDiffSections(diffResult.stdout);
+        const ignoredHeaders = getIgnoredDiffSectionHeaders(diffResult.stdout);
 
-        if (isDebug) {
-          yield* Effect.forEach(getIgnoredDiffSectionHeaders(diffResult.stdout), (header) =>
-            Effect.log(`Ignored diff file: ${header}`),
-          );
-        }
+        yield* Effect.logDebug("Loaded staged diff", {
+          contextLines,
+          filteredBytes: stagedPatch.length,
+          ignoredFileCount: ignoredHeaders.length,
+          rawBytes: diffResult.stdout.length,
+        });
+        yield* Effect.forEach(ignoredHeaders, (header) =>
+          Effect.logDebug("Ignored diff file", { header }),
+        );
 
         if (stagedPatch.trim().length === 0) {
+          yield* Effect.logDebug("No staged changes remain after filtering", { repoRoot });
           return yield* new NoStagedChangesError({ repoRoot });
         }
 
         const indexFingerprint = yield* loadCurrentFingerprint(repoRoot);
+        yield* Effect.logDebug("Loaded staged index fingerprint", { indexFingerprint });
 
         return {
           indexFingerprint,
@@ -212,21 +235,44 @@ class GitRepository extends Context.Service<
         };
       });
 
-      const commitApproved = Effect.fn("GitRepository.commitApproved")(function* (
-        snapshot: StagedSnapshotType,
-        commitMessage: string,
-      ): Effect.fn.Return<void, IndexChangedDuringReviewError | GitCommandError> {
-        const currentFingerprint = yield* loadCurrentFingerprint(snapshot.repoRoot);
+      const commitApproved = Effect.fn("GitRepository.commitApproved")(
+        function* (
+          snapshot: StagedSnapshotType,
+          commitMessage: string,
+        ): Effect.fn.Return<void, IndexChangedDuringReviewError | GitCommandError> {
+          yield* Effect.logDebug("Verifying staged index fingerprint before commit", {
+            repoRoot: snapshot.repoRoot,
+          });
+          const currentFingerprint = yield* loadCurrentFingerprint(snapshot.repoRoot);
 
-        if (currentFingerprint !== snapshot.indexFingerprint) {
-          return yield* new IndexChangedDuringReviewError({ repoRoot: snapshot.repoRoot });
-        }
+          if (currentFingerprint !== snapshot.indexFingerprint) {
+            yield* Effect.logDebug("Staged index fingerprint changed", {
+              currentFingerprint,
+              expectedFingerprint: snapshot.indexFingerprint,
+              repoRoot: snapshot.repoRoot,
+            });
+            return yield* new IndexChangedDuringReviewError({ repoRoot: snapshot.repoRoot });
+          }
 
-        return yield* Effect.scoped(
-          Effect.gen(function* () {
-            const messageFilepath = yield* fs
-              .makeTempFileScoped({ prefix: "gitai-commit-message-" })
-              .pipe(
+          return yield* Effect.scoped(
+            Effect.gen(function* () {
+              const messageFilepath = yield* fs
+                .makeTempFileScoped({ prefix: "gitai-commit-message-" })
+                .pipe(
+                  Effect.mapError(
+                    (error) =>
+                      new GitCommandError({
+                        command: gitCommand(commitWithTempFileCommand()),
+                        message: error.message,
+                      }),
+                  ),
+                );
+
+              yield* Effect.logDebug("Writing commit message file", {
+                messageBytes: commitMessage.length,
+                messageFilepath,
+              });
+              yield* fs.writeFileString(messageFilepath, commitMessage).pipe(
                 Effect.mapError(
                   (error) =>
                     new GitCommandError({
@@ -236,25 +282,21 @@ class GitRepository extends Context.Service<
                 ),
               );
 
-            yield* fs.writeFileString(messageFilepath, commitMessage).pipe(
-              Effect.mapError(
-                (error) =>
-                  new GitCommandError({
-                    command: gitCommand(commitWithTempFileCommand()),
-                    message: error.message,
-                  }),
-              ),
-            );
+              const commitArgs = commitWithFileCommand(messageFilepath);
+              const commitResult = yield* runGit(snapshot.repoRoot, commitArgs);
 
-            const commitArgs = commitWithFileCommand(messageFilepath);
-            const commitResult = yield* runGit(snapshot.repoRoot, commitArgs);
+              if (commitResult.exitCode !== 0) {
+                return yield* toGitCommandError(commitArgs, commitResult);
+              }
 
-            if (commitResult.exitCode !== 0) {
-              return yield* toGitCommandError(commitArgs, commitResult);
-            }
-          }),
-        );
-      });
+              yield* Effect.logDebug("Git commit command completed successfully", {
+                repoRoot: snapshot.repoRoot,
+              });
+            }),
+          );
+        },
+        Effect.annotateLogs({ service: "GitRepository" }),
+      );
 
       return GitRepository.of({
         commitApproved,

@@ -61,6 +61,12 @@ To change diff context size:
 gitai commit --contextLineOption 5
 ```
 
+To troubleshoot a commit run, enable Effect debug logs:
+
+```sh
+DEBUG=true gitai commit
+```
+
 ## Development
 
 Run the full validation suite before handing off changes:

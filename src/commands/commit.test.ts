@@ -24,6 +24,7 @@ type RunGitaiCommitOptions = Readonly<{
   cwd: string;
   codexMode: CodexMode;
   calledFilepath: string;
+  debug?: boolean | undefined;
   input?: string | undefined;
 }>;
 
@@ -217,10 +218,12 @@ esac
     calledFilepath,
     codexMode,
     cwd,
+    debug,
     input,
   }: RunGitaiCommitOptions) => {
     const env = {
       ...process.env,
+      ...(debug === undefined ? {} : { DEBUG: String(debug) }),
       GITAI_TEST_CODEX_CALLED_FILE: calledFilepath,
       GITAI_TEST_CODEX_MODE: codexMode,
       PATH: `${codexDirectory}${delimiter}${process.env.PATH ?? ""}`,
@@ -331,8 +334,34 @@ esac
 
     expect(result.exitCode).toBe(1);
     expect(result.output).toContain("Codex exited with code 17");
+    expect(result.output).not.toContain("[Debug]");
     expect(result.output).not.toContain("Would you like to commit with this message?");
     expect(result.output).not.toContain("at <anonymous>");
+    expect(await fileExists(calledFilepath)).toBe(true);
+    expect(await hasHeadCommit(repo)).toBe(false);
+    expect(await hasStagedChanges(repo)).toBe(true);
+  });
+
+  it("emits Effect debug logs when DEBUG is enabled", async () => {
+    const repo = await createGitRepo();
+    tempDirectories.push(repo);
+    await stageFile(repo, "hello.txt", "hello\n");
+
+    const calledFilepath = join(repo, "codex-called.txt");
+    const result = await runGitaiCommit({
+      calledFilepath,
+      codexMode: "fail",
+      cwd: repo,
+      debug: true,
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.output).toContain("[Debug] Starting gitai commit");
+    expect(result.output).toContain("[Debug] Running git command");
+    expect(result.output).toContain("[Debug] Codex command exited");
+    expect(result.output).toContain("command=commit");
+    expect(result.output).toContain("service=CliAgent");
+    expect(result.output).toContain("Codex exited with code 17");
     expect(await fileExists(calledFilepath)).toBe(true);
     expect(await hasHeadCommit(repo)).toBe(false);
     expect(await hasStagedChanges(repo)).toBe(true);

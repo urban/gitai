@@ -1,5 +1,6 @@
 import {
   Config,
+  Console,
   Duration,
   Effect,
   Exit,
@@ -116,127 +117,151 @@ class CliAgent extends Context.Service<
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       // TODO create AppConfig
-      const isDebug = yield* Config.boolean("DEBUG").pipe(Config.withDefault(false));
       const codexTimeoutMs = yield* Config.number("CODEX_TIMEOUT_MS").pipe(
         Config.withDefault(300_000),
       );
       const codexTimeout = Duration.millis(codexTimeoutMs);
 
-      const command = Effect.fn("CliAgent.command")(function* ({
-        outputSchema,
-        prompt,
-      }: CliAgentCommand) {
-        return yield* Effect.scoped(
-          Effect.gen(function* () {
-            yield* Effect.log("Running command...");
-
-            const tempDirectory = yield* fs.makeTempDirectoryScoped({ prefix: "gitai-codex-" });
-            const outputFilepath = path.join(tempDirectory, OUTPUT_LAST_MESSAGE_FILENAME);
-
-            let outputSchemaFilepath: string | undefined;
-            if (outputSchema !== undefined) {
-              outputSchemaFilepath = path.join(tempDirectory, OUTPUT_SCHEMA_FILENAME);
-              const outputSchemaContents = yield* renderOutputSchema(outputSchema);
-              yield* fs.writeFileString(outputSchemaFilepath, outputSchemaContents);
-            }
-
-            const args = buildCodexArgs({ outputFilepath, outputSchemaFilepath });
-
-            const cmd = ChildProcess.make("codex", args, {
-              stderr: "pipe",
-              stdin: Stream.make(new TextEncoder().encode(prompt)),
-              stdout: "pipe",
-            });
-
-            if (isDebug) {
-              yield* Effect.log(`Running codex ${args.join(" ")}`);
-            }
-
-            const process = yield* executor.spawn(cmd);
-
-            const stderrFiber = yield* process.stderr.pipe(
-              Stream.decodeText(),
-              Stream.tap((chunk) =>
-                isDebug ? Effect.log(`[codex stderr] ${chunk}`) : Effect.void,
-              ),
-              Stream.runCollect,
-              Effect.map((chunks) => chunks.join("")),
-              Effect.forkScoped,
-            );
-
-            const stdoutFiber = yield* process.stdout.pipe(
-              Stream.decodeText(),
-              Stream.tap((chunk) => (isDebug ? Effect.log(chunk) : Effect.void)),
-              Stream.runCollect,
-              Effect.map((chunks) => chunks.join("")),
-              Effect.forkScoped,
-            );
-
-            const timeoutError = new CliAgentError({
-              message: `Codex exec timed out after ${codexTimeoutMs}ms`,
-            });
-
-            const exit = yield* Effect.exit(
-              process.exitCode.pipe(
-                Effect.timeoutOrElse({
-                  duration: codexTimeout,
-                  orElse: () =>
-                    process.kill({ killSignal: "SIGTERM" }).pipe(
-                      Effect.catch(() => Effect.void),
-                      Effect.andThen(Effect.fail(timeoutError)),
-                    ),
-                }),
-              ),
-            );
-
-            const failure = Exit.findErrorOption(exit);
-            const didTimeout = Option.isSome(failure) && failure.value === timeoutError;
-
-            if (didTimeout) {
-              return yield* timeoutError;
-            }
-
-            const [stdout, stderr] = yield* Effect.all(
-              [Fiber.join(stdoutFiber), Fiber.join(stderrFiber)],
-              {
-                concurrency: "unbounded",
-              },
-            );
-
-            if (Exit.isFailure(exit)) {
-              return yield* new CliAgentError({
-                message: "Codex process failed to exit cleanly",
-                cause: { stderr, stdout, exit: exit.cause },
+      const command = Effect.fn("CliAgent.command")(
+        function* ({ outputSchema, prompt }: CliAgentCommand) {
+          return yield* Effect.scoped(
+            Effect.gen(function* () {
+              yield* Console.log("Running command...");
+              yield* Effect.logDebug("Preparing codex command", {
+                hasOutputSchema: outputSchema !== undefined,
+                promptBytes: prompt.length,
+                timeoutMs: codexTimeoutMs,
               });
-            }
 
-            if (exit.value !== 0) {
-              return yield* new CliAgentError({
-                message: `Codex exited with code ${exit.value}`,
-                cause: { stderr, stdout },
+              const tempDirectory = yield* fs.makeTempDirectoryScoped({ prefix: "gitai-codex-" });
+              const outputFilepath = path.join(tempDirectory, OUTPUT_LAST_MESSAGE_FILENAME);
+              yield* Effect.logDebug("Created codex temp directory", {
+                outputFilepath,
+                tempDirectory,
               });
-            }
 
-            if (!(yield* fs.exists(outputFilepath))) {
-              return yield* new CliAgentError({
-                message: "Codex did not produce a final response",
-                cause: { outputFilepath, stderr, stdout },
+              let outputSchemaFilepath: string | undefined;
+              if (outputSchema !== undefined) {
+                outputSchemaFilepath = path.join(tempDirectory, OUTPUT_SCHEMA_FILENAME);
+                const outputSchemaContents = yield* renderOutputSchema(outputSchema);
+                yield* Effect.logDebug("Writing codex output schema", {
+                  outputSchemaBytes: outputSchemaContents.length,
+                  outputSchemaFilepath,
+                });
+                yield* fs.writeFileString(outputSchemaFilepath, outputSchemaContents);
+              }
+
+              const args = buildCodexArgs({ outputFilepath, outputSchemaFilepath });
+
+              const cmd = ChildProcess.make("codex", args, {
+                stderr: "pipe",
+                stdin: Stream.make(new TextEncoder().encode(prompt)),
+                stdout: "pipe",
               });
-            }
 
-            const response = yield* fs.readFileString(outputFilepath);
-
-            if (response.trim().length === 0) {
-              return yield* new CliAgentError({
-                message: "Codex produced an empty final response",
-                cause: { outputFilepath, stderr, stdout },
+              yield* Effect.logDebug("Running codex command", {
+                command: `codex ${args.join(" ")}`,
               });
-            }
 
-            return response;
-          }),
-        );
-      });
+              const process = yield* executor.spawn(cmd);
+
+              const stderrFiber = yield* process.stderr.pipe(
+                Stream.decodeText(),
+                Stream.tap((chunk) => Effect.logDebug("codex stderr", { chunk })),
+                Stream.runCollect,
+                Effect.map((chunks) => chunks.join("")),
+                Effect.forkScoped,
+              );
+
+              const stdoutFiber = yield* process.stdout.pipe(
+                Stream.decodeText(),
+                Stream.tap((chunk) => Effect.logDebug("codex stdout", { chunk })),
+                Stream.runCollect,
+                Effect.map((chunks) => chunks.join("")),
+                Effect.forkScoped,
+              );
+
+              const timeoutError = new CliAgentError({
+                message: `Codex exec timed out after ${codexTimeoutMs}ms`,
+              });
+
+              const exit = yield* Effect.exit(
+                process.exitCode.pipe(
+                  Effect.timeoutOrElse({
+                    duration: codexTimeout,
+                    orElse: () =>
+                      process.kill({ killSignal: "SIGTERM" }).pipe(
+                        Effect.catch(() => Effect.void),
+                        Effect.andThen(Effect.fail(timeoutError)),
+                      ),
+                  }),
+                ),
+              );
+
+              const failure = Exit.findErrorOption(exit);
+              const didTimeout = Option.isSome(failure) && failure.value === timeoutError;
+
+              if (didTimeout) {
+                yield* Effect.logDebug("Codex command timed out", { timeoutMs: codexTimeoutMs });
+                return yield* timeoutError;
+              }
+
+              const [stdout, stderr] = yield* Effect.all(
+                [Fiber.join(stdoutFiber), Fiber.join(stderrFiber)],
+                {
+                  concurrency: "unbounded",
+                },
+              );
+              yield* Effect.logDebug("Codex command streams collected", {
+                stderrBytes: stderr.length,
+                stdoutBytes: stdout.length,
+              });
+
+              if (Exit.isFailure(exit)) {
+                yield* Effect.logDebug("Codex process failed to exit cleanly", {
+                  exit: exit.cause,
+                });
+                return yield* new CliAgentError({
+                  message: "Codex process failed to exit cleanly",
+                  cause: { stderr, stdout, exit: exit.cause },
+                });
+              }
+
+              yield* Effect.logDebug("Codex command exited", { exitCode: exit.value });
+              if (exit.value !== 0) {
+                return yield* new CliAgentError({
+                  message: `Codex exited with code ${exit.value}`,
+                  cause: { stderr, stdout },
+                });
+              }
+
+              if (!(yield* fs.exists(outputFilepath))) {
+                yield* Effect.logDebug("Codex final response file is missing", { outputFilepath });
+                return yield* new CliAgentError({
+                  message: "Codex did not produce a final response",
+                  cause: { outputFilepath, stderr, stdout },
+                });
+              }
+
+              const response = yield* fs.readFileString(outputFilepath);
+              yield* Effect.logDebug("Read codex final response", {
+                responseBytes: response.length,
+              });
+
+              if (response.trim().length === 0) {
+                return yield* new CliAgentError({
+                  message: "Codex produced an empty final response",
+                  cause: { outputFilepath, stderr, stdout },
+                });
+              }
+
+              return response;
+            }),
+          );
+        },
+        Effect.annotateLogs({ service: "CliAgent" }),
+        Effect.withLogSpan("cli-agent.command"),
+      );
 
       return CliAgent.of({
         command,

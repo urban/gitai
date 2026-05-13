@@ -2,10 +2,10 @@
 
 import * as BunRuntime from "@effect/platform-bun/BunRuntime";
 import * as BunServices from "@effect/platform-bun/BunServices";
-import { Cause, Effect, Exit, Layer, Logger, Option } from "effect";
+import { Cause, Console, Effect, Exit, Layer, Option } from "effect";
 import { Command } from "effect/unstable/cli";
 import pkg from "../package.json" with { type: "json" };
-import { cliLogger } from "./CliLogger";
+import { cliLoggerLayer } from "./CliLogger";
 import { commandCommit } from "./commands/commit";
 import { CliAgent } from "./services/CliAgent";
 import { CommitMessageGenerator } from "./services/CommitMessageGenerator";
@@ -16,7 +16,7 @@ import { Templater } from "./services/Templater";
 
 const cli = Command.make("gitai");
 
-const MainLayer = Layer.mergeAll(CommitWorkflow.layer, Logger.layer([cliLogger])).pipe(
+const MainLayer = Layer.mergeAll(CommitWorkflow.layer, cliLoggerLayer).pipe(
   Layer.provideMerge(GitRepository.layer),
   Layer.provideMerge(CommitMessageGenerator.layer),
   Layer.provideMerge(CommitReview.layer),
@@ -52,6 +52,9 @@ if (import.meta.main) {
     Command.run({
       version: pkg.version,
     }),
+    Effect.tapCause((cause: Cause.Cause<unknown>) =>
+      Cause.hasInterruptsOnly(cause) ? Effect.void : Console.error(getCauseMessage(cause)),
+    ),
     // @effect-diagnostics-next-line strictEffectProvide:off
     Effect.provide(MainLayer),
     (effect) =>
@@ -59,7 +62,6 @@ if (import.meta.main) {
         disableErrorReporting: true,
         teardown: (exit, onExit) => {
           if (Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause)) {
-            process.stderr.write(`${getCauseMessage(exit.cause)}\n`);
             onExit(1);
             return;
           }
